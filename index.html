@@ -238,7 +238,7 @@ footer{
 
 <header class="app-header">
   <div class="app-title-main">🩰 Dance Practice Companion</div>
-  <div class="app-title">Camera practice tool &amp; music player — for dancers and dance schools</div>
+  <div class="app-title">Free camera practice tool &amp; music player — for dancers and dance schools</div>
 </header>
 
 <nav class="tabs">
@@ -252,14 +252,16 @@ footer{
     <div class="card">
       <h2>🎥 Practice Companion</h2>
       <p style="font-size:1.08rem;font-weight:800;color:var(--purple);text-align:center;margin:2px 0 16px;line-height:1.5">
-        🎵 Music → ⏺ Start Camera → 💃 Dance!
+        🎵 Music → ⏺ Start Camera → ⏱ Beep countdown → 💃 Dance!
       </p>
-      <p class="practice-intro">Your camera tracks your body and measures hang time, jump height and angles as you
-        practice. <strong>Nothing is ever uploaded</strong> — it all stays on this device, and it measures numbers,
-        not artistry.</p>
+      <p class="practice-intro">This watches your body through the camera and shows a skeleton overlay with real
+        numbers — hang time, jump height, angles, timing. <strong>Nothing is ever uploaded</strong>; everything stays
+        on this device. Sessions record locally so you can review them, but the video only lives in your browser
+        unless you save it. It's a technique-improving tool, not a judge — it measures numbers, never your artistry.
+        Treat height and angle as estimates for tracking your own progress, not exact lab measurements.</p>
 
       <h3 style="margin-top:14px">🎵 Choose Music (optional)</h3>
-      <div class="music-tile-grid" id="practiceMusicTiles"><p class="empty-note">No tracks yet — add one, or paste a YouTube link below.</p></div>
+      <div class="music-tile-grid" id="practiceMusicTiles"><p class="empty-note">No saved tracks yet — add one in the Music tab, or paste a YouTube link below.</p></div>
       <div class="practice-controls" style="margin-top:6px">
         <input type="text" id="practiceYoutubeUrlInput" placeholder="Or paste a YouTube link…"
           style="flex:1;min-width:180px;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:var(--card-bg);color:var(--ink);font-family:inherit;font-size:.9rem">
@@ -285,7 +287,7 @@ footer{
 
       <label style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85rem;font-weight:700;margin-bottom:10px;cursor:pointer">
         <input type="checkbox" id="showSkeletonToggle" checked style="width:18px;height:18px;accent-color:var(--purple)">
-        Show skeleton overlay <span style="font-weight:500;color:var(--ink-soft)">(off for group/troupe practice)</span>
+        Show skeleton overlay <span style="font-weight:500;color:var(--ink-soft)">(turn off for group/troupe practice)</span>
       </label>
 
       <div class="practice-controls">
@@ -302,7 +304,7 @@ footer{
 
       <h3 style="margin-top:16px">⚙️ Practice Settings</h3>
 
-      <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">Dance style <span style="font-weight:500;color:var(--ink-soft)">(shown in the corner of your saved video)</span></div>
+      <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">Dance style <span style="font-weight:500;color:var(--ink-soft)">(stamped in the corner of your saved video)</span></div>
       <div class="style-tile-grid" id="danceStyleTiles">
         <div class="style-tile" data-style="Ballet">Ballet</div>
         <div class="style-tile" data-style="Tap">Tap</div>
@@ -369,7 +371,7 @@ footer{
       <div class="practice-controls" id="reviewYoutubeCalibrateRow" style="display:none;margin-top:10px">
         <button class="btn gold small" id="reviewYoutubeMarkBtn">🎯 Song's starting now — sync!</button>
       </div>
-      <div id="reviewYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the track from the start, ads and all — tap the button the moment the song begins.</div>
+      <div id="reviewYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the YouTube track from the start (ads and all) — tap the button above the moment you hear the real song begin.</div>
       <div class="practice-controls" style="margin-top:12px">
         <button class="btn" id="practiceSaveVideoBtn" onclick="savePracticeVideo()">💾 Save Video to Device</button>
         <button class="btn ghost" id="practiceDiscardVideoBtn" onclick="discardPracticeVideo()">Discard</button>
@@ -389,7 +391,7 @@ footer{
 
     <div class="card">
       <h2>📋 Practice Log</h2>
-      <div id="practiceLogList"><p class="empty-note">No sessions logged yet — start the camera to begin one.</p></div>
+      <div id="practiceLogList"><p class="empty-note">No practice sessions logged yet — start the camera above to begin one.</p></div>
     </div>
   </section>
 
@@ -534,7 +536,7 @@ function commitPracticeSession(session){
 
 function renderPracticeLog(){
   const list = document.getElementById('practiceLogList');
-  if(!practice.length){ list.innerHTML = '<p class="empty-note">No sessions logged yet — start the camera to begin one.</p>'; return; }
+  if(!practice.length){ list.innerHTML = '<p class="empty-note">No practice sessions logged yet — start the camera above to begin one.</p>'; return; }
   const sorted = practice.slice().sort((a,b)=> b.at - a.at);
   list.innerHTML = sorted.map(s=>{
     const when = new Date(s.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
@@ -589,7 +591,7 @@ function renderPracticeLog(){
         <div class="practice-controls" id="modalYoutubeCalibrateRow" style="display:none;margin-top:10px">
           <button class="btn gold small" id="modalYoutubeMarkBtn">🎯 Song's starting now — sync!</button>
         </div>
-        <div id="modalYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the track from the start, ads and all — tap the button the moment the song begins.</div>` : '';
+        <div id="modalYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the YouTube track from the start (ads and all) — tap the button above the moment you hear the real song begin.</div>` : '';
       openModal(`<button class="close-x" onclick="closeModal()">✕</button><h2>Practice Session</h2>
         <video id="modalReviewVideo" controls autoplay style="width:100%;border-radius:12px;background:#000" src="${url}"></video>
         ${syncHtml}`);
@@ -858,7 +860,7 @@ async function renderPracticeMusicTiles(){
   const wrap = document.getElementById('practiceMusicTiles');
   const tracks = await getAllMusicTracks();
   if(!tracks.length){
-    wrap.innerHTML = '<p class="empty-note">No tracks yet — add one, or paste a YouTube link below.</p>';
+    wrap.innerHTML = '<p class="empty-note">No saved tracks yet — add one in the Music tab, or paste a YouTube link below.</p>';
     return;
   }
   wrap.innerHTML = tracks.map(t => `
