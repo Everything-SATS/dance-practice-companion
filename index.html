@@ -192,16 +192,15 @@ footer{
 .pl-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .pl-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
 .curiosity-banner{
-  background:linear-gradient(120deg,var(--pink) 0%,var(--purple) 100%); color:#fff;
-  border-radius:14px; padding:16px 18px; margin:12px 0 14px;
-  box-shadow:0 6px 16px rgba(169,143,224,0.3);
+  background:var(--bg); border:2px solid var(--line); color:var(--ink);
+  border-radius:14px; padding:16px 18px;
 }
-.cb-label{font-weight:800;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.9;display:block;margin-bottom:6px}
-.curiosity-fact{font-size:1.02rem;font-weight:700;line-height:1.4;margin:0 0 10px;color:#fff;text-wrap:balance}
+.cb-label{font-weight:800;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);display:block;margin-bottom:6px}
+.curiosity-fact{font-size:1.02rem;font-weight:700;line-height:1.4;margin:0 0 10px;color:var(--ink);text-wrap:balance}
 .cb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.cb-source{font-size:.72rem;color:#fff;opacity:.85;text-decoration:underline}
+.cb-source{font-size:.72rem;color:var(--ink-soft);text-decoration:underline}
 .cb-source:empty{display:none}
-.cb-btn{background:#fff;color:var(--purple);font-size:.78rem;font-weight:800;padding:9px 14px;
+.cb-btn{background:var(--purple);color:#fff;font-size:.78rem;font-weight:800;padding:9px 14px;
   border-radius:12px;border:none;cursor:pointer;font-family:inherit;white-space:nowrap}
 .style-tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-bottom:14px}
 .style-tile{background:var(--bg);border:2px solid var(--line);border-radius:9px;padding:6px 4px;
@@ -211,7 +210,8 @@ footer{
 .style-tile.selected{border-color:var(--pink);background:var(--pink-light);color:var(--pink)}
 .practice-countdown{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(20,16,30,0.55);color:#fff;text-align:center;padding:20px}
-.pc-pulse{font-size:4.5rem;line-height:1;animation:pcPulse 1s ease-in-out infinite}
+.pc-pulse{font-size:4.5rem;line-height:1;animation:pcPulse 1s ease-in-out infinite;transition:opacity .3s ease}
+.pc-pulse.paused{animation:none;opacity:0.35}
 @keyframes pcPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:0.6}}
 @media (prefers-reduced-motion: reduce){.pc-pulse{animation:none}}
 .pc-label{font-size:.95rem;margin-top:14px;opacity:0.92}
@@ -226,6 +226,7 @@ footer{
 .yt-embed-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
 .yt-embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .music-tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:10px}
+.music-tile-grid .empty-note{grid-column:1/-1}
 .music-tile{background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:10px 8px;
   text-align:center;cursor:pointer;font-size:.78rem;font-weight:700;word-break:break-word;line-height:1.3;
   transition:border-color .15s ease,background .15s ease}
@@ -250,8 +251,8 @@ footer{
   <section id="tab-practice" class="tab-panel active">
     <div class="card">
       <h2>🎥 Practice Companion</h2>
-      <p style="font-size:.82rem;font-weight:700;color:var(--purple);text-align:center;margin:-2px 0 14px">
-        🎵 Choose music → ⏺ Press Start Camera → ⏱ 10s countdown to get in position → 💃 Dance!
+      <p style="font-size:1.08rem;font-weight:800;color:var(--purple);text-align:center;margin:2px 0 16px;line-height:1.5">
+        🎵 Music → ⏺ Start Camera → ⏱ Beep countdown → 💃 Dance!
       </p>
       <p class="practice-intro">This watches your body position through your camera and gives you a skeleton overlay
         and quantitative movement data while you practice — hang time, estimated jump height, leg-split angle, and
@@ -271,6 +272,10 @@ footer{
       </div>
       <div id="practiceYoutubeError" style="display:none;color:#e05a7a;font-size:.78rem;margin-top:6px"></div>
       <div id="practiceYoutubeStatus" style="display:none;color:var(--ink-soft);font-size:.78rem;margin-top:6px"></div>
+      <div class="practice-controls" id="practiceYoutubeControls" style="display:none;margin-top:6px">
+        <button class="btn secondary small" id="practiceYoutubeToggleBtn">⏸ Pause</button>
+        <button class="btn ghost small" id="practiceYoutubeStopBtn">⏹ Stop</button>
+      </div>
 
       <div class="practice-stage" id="practiceStage">
         <video id="practiceVideo" autoplay playsinline muted></video>
@@ -278,8 +283,8 @@ footer{
         <canvas id="practiceRecordCanvas" style="display:none"></canvas>
         <div class="practice-placeholder" id="practicePlaceholder">Tap "Start Camera" below to begin</div>
         <div class="practice-countdown" id="practiceCountdownOverlay" style="display:none">
-          <div class="pc-pulse">🔊</div>
-          <div class="pc-label">Get ready — a beep every second, music starts soon</div>
+          <div class="pc-pulse" id="practiceCountdownPulse">🔊</div>
+          <div class="pc-label" id="practiceCountdownLabel">Ready — a beep every second</div>
         </div>
       </div>
 
@@ -301,15 +306,6 @@ footer{
       </div>
 
       <h3 style="margin-top:16px">⚙️ Practice Settings</h3>
-
-      <div class="curiosity-banner" id="danceCuriosityBanner">
-        <span class="cb-label">💃 Dance Curiosity Corner</span>
-        <p class="curiosity-fact" id="danceCuriosityFact">Tap for a dance fact!</p>
-        <div class="cb-row">
-          <a class="cb-source" id="danceCuriositySource" href="#" target="_blank" rel="noopener"></a>
-          <button class="cb-btn" onclick="showRandomDanceFact()">Give me a fact</button>
-        </div>
-      </div>
 
       <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">Dance style <span style="font-weight:500;color:var(--ink-soft)">(stamped in the corner of your saved video)</span></div>
       <div class="style-tile-grid" id="danceStyleTiles">
@@ -372,9 +368,27 @@ footer{
     <div class="card" id="practiceReviewCard" style="display:none">
       <h2>🎬 Review Your Session</h2>
       <video id="practiceReviewVideo" controls style="width:100%;border-radius:var(--radius);background:#000"></video>
+      <div class="practice-controls" id="reviewYoutubeSyncRow" style="display:none;margin-top:10px">
+        <button class="btn secondary small" id="reviewYoutubeSyncBtn">▶ Play music alongside</button>
+      </div>
+      <div class="practice-controls" id="reviewYoutubeCalibrateRow" style="display:none;margin-top:10px">
+        <button class="btn gold small" id="reviewYoutubeMarkBtn">🎯 Song's starting now — sync!</button>
+      </div>
+      <div id="reviewYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the YouTube track from the start (ads and all) — tap the button above the moment you hear the real song begin.</div>
       <div class="practice-controls" style="margin-top:12px">
         <button class="btn" id="practiceSaveVideoBtn" onclick="savePracticeVideo()">💾 Save Video to Device</button>
         <button class="btn ghost" id="practiceDiscardVideoBtn" onclick="discardPracticeVideo()">Discard</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="curiosity-banner" id="danceCuriosityBanner">
+        <span class="cb-label">💃 Dance Curiosity Corner</span>
+        <p class="curiosity-fact" id="danceCuriosityFact">Tap for a dance fact!</p>
+        <div class="cb-row">
+          <a class="cb-source" id="danceCuriositySource" href="#" target="_blank" rel="noopener"></a>
+          <button class="cb-btn" onclick="showRandomDanceFact()">Give me a fact</button>
+        </div>
       </div>
     </div>
 
@@ -568,12 +582,28 @@ function renderPracticeLog(){
   list.querySelectorAll('.pl-watch-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const sessionId = Number(btn.dataset.session);
+      const s = practice.find(p => p.at === sessionId);
       btn.textContent = 'Loading…';
       const url = await window.getPracticeVideoUrl(sessionId);
       btn.textContent = '▶ Watch Video';
       if(!url){ notify("Sorry, that video couldn't be found — it may have been cleared from this device."); return; }
+      const syncHtml = (s && s.youtubeVideoId) ? `
+        <div class="practice-controls" style="margin-top:10px">
+          <button class="btn secondary small" id="modalYoutubeSyncBtn">▶ Play music alongside</button>
+        </div>
+        <div class="practice-controls" id="modalYoutubeCalibrateRow" style="display:none;margin-top:10px">
+          <button class="btn gold small" id="modalYoutubeMarkBtn">🎯 Song's starting now — sync!</button>
+        </div>
+        <div id="modalYoutubeCalibrateNote" style="display:none;font-size:.72rem;color:var(--ink-soft);margin-top:6px">Playing the YouTube track from the start (ads and all) — tap the button above the moment you hear the real song begin.</div>` : '';
       openModal(`<button class="close-x" onclick="closeModal()">✕</button><h2>Practice Session</h2>
-        <video controls autoplay style="width:100%;border-radius:12px;background:#000" src="${url}"></video>`);
+        <video id="modalReviewVideo" controls autoplay style="width:100%;border-radius:12px;background:#000" src="${url}"></video>
+        ${syncHtml}`);
+      if(s && s.youtubeVideoId){
+        document.getElementById('modalYoutubeSyncBtn').onclick = () => {
+          window.startYoutubeSyncPlayback(s.youtubeVideoId, 'modalReviewVideo', s.at, s.youtubeAudioOffset,
+            'modalYoutubeCalibrateRow', 'modalYoutubeCalibrateNote', 'modalYoutubeMarkBtn');
+        };
+      }
     });
   });
   list.querySelectorAll('.pl-delete-btn').forEach(btn => {
@@ -687,6 +717,16 @@ window.getMusicRecordingTrack = function(){
 };
 window.isMusicLoaded = function(){ return currentMusicTrackId != null; };
 window.isMusicPlaying = function(){ return currentMusicTrackId != null && !musicAudio.paused; };
+// Since a YouTube track's audio can't be captured into the recording, we instead remember which
+// video was active when the session ended - so later, reviewing the clip can offer to replay
+// that same YouTube track alongside the (silent, as far as YouTube's concerned) saved video.
+window.getActiveYoutubeInfo = function(){
+  if(!ytPlayer || !ytPlayer.getVideoData) return null;
+  try{
+    const data = ytPlayer.getVideoData();
+    return (data && data.video_id) ? { videoId: data.video_id, title: data.title || 'YouTube track' } : null;
+  }catch(err){ return null; }
+};
 window.playMusicFromStart = function(){
   if(currentMusicTrackId == null) return;
   musicAudio.currentTime = 0;
@@ -1014,7 +1054,19 @@ function updateYoutubeNowPlayingStatus(){
     statusEl.style.display = '';
     statusEl.textContent = '🎵 Now streaming: ' + title;
   }
+  document.getElementById('practiceYoutubeControls').style.display = 'flex';
+  const isPlaying = ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+  document.getElementById('practiceYoutubeToggleBtn').textContent = isPlaying ? '⏸ Pause' : '▶ Play';
 }
+document.getElementById('practiceYoutubeToggleBtn').addEventListener('click', () => {
+  if(!ytPlayer) return;
+  const isPlaying = ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+  if(isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+});
+document.getElementById('practiceYoutubeStopBtn').addEventListener('click', () => {
+  if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+  document.getElementById('practiceYoutubeToggleBtn').textContent = '▶ Play';
+});
 
 function createYoutubePlayer(videoId){
   document.getElementById('youtubePlayerWrap').style.display = '';
@@ -1047,6 +1099,60 @@ function loadYoutubeFromInput(inputId){
   if(ytApiReady) createYoutubePlayer(id);
   else loadYoutubeApi();
 }
+
+// Plays a saved session's video and its YouTube track together. If we already know the offset
+// where the real song starts (past any ad), we seek straight there. Otherwise we play the YouTube
+// track from 0 - ads and all - and let the user mark the moment the song actually begins, saving
+// that offset against this session so next time it's instant.
+function ensureYoutubePlayerLoaded(videoId, onReady){
+  ytPendingVideoId = videoId;
+  localStorage.setItem('dancePractice_lastYoutubeId', videoId);
+  document.getElementById('youtubeUrlInput').value = 'https://youtu.be/' + videoId;
+  document.getElementById('practiceYoutubeUrlInput').value = 'https://youtu.be/' + videoId;
+  if(ytApiReady){
+    createYoutubePlayer(videoId);
+    setTimeout(onReady, 500);
+  } else {
+    loadYoutubeApi();
+    const check = setInterval(() => {
+      if(ytApiReady){ clearInterval(check); createYoutubePlayer(videoId); setTimeout(onReady, 500); }
+    }, 300);
+  }
+}
+
+window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, savedOffset,
+    calibrateRowId, calibrateNoteId, markBtnId){
+  const v = document.getElementById(videoElId);
+  const calibrateRow = document.getElementById(calibrateRowId || 'reviewYoutubeCalibrateRow');
+  const calibrateNote = document.getElementById(calibrateNoteId || 'reviewYoutubeCalibrateNote');
+  const markBtn = document.getElementById(markBtnId || 'reviewYoutubeMarkBtn');
+
+  if(savedOffset != null){
+    ensureYoutubePlayerLoaded(videoId, () => {
+      if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(savedOffset, true);
+      if(ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+      if(v){ v.currentTime = 0; v.play().catch(() => {}); }
+    });
+    return;
+  }
+
+  ensureYoutubePlayerLoaded(videoId, () => {
+    if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(0, true);
+    if(ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+  });
+  if(calibrateRow){ calibrateRow.style.display = 'flex'; }
+  if(calibrateNote){ calibrateNote.style.display = ''; }
+  if(markBtn){
+    markBtn.onclick = () => {
+      const offset = (ytPlayer && ytPlayer.getCurrentTime) ? ytPlayer.getCurrentTime() : 0;
+      practice = practice.map(s => s.at === sessionAt ? Object.assign({}, s, { youtubeAudioOffset: offset }) : s);
+      savePractice();
+      if(calibrateRow) calibrateRow.style.display = 'none';
+      if(calibrateNote) calibrateNote.style.display = 'none';
+      if(v){ v.currentTime = 0; v.play().catch(() => {}); }
+    };
+  }
+};
 
 document.getElementById('youtubeLoadBtn').addEventListener('click', () => loadYoutubeFromInput('youtubeUrlInput'));
 document.getElementById('practiceYoutubeLoadBtn').addEventListener('click', () => {
@@ -1211,29 +1317,41 @@ function beep(accent){
   osc.start(); osc.stop(audioCtx.currentTime + 0.13);
 }
 
-let countdownInterval = null;
+let countdownTimer = null;
 let countdownActive = false; // burned into the recording while the countdown runs, so it's visible on review
 function cancelMusicCountdown(){
-  if(countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
+  if(countdownTimer){ clearInterval(countdownTimer); clearTimeout(countdownTimer); countdownTimer = null; }
   countdownActive = false;
+  const pulseEl = document.getElementById('practiceCountdownPulse');
+  if(pulseEl) pulseEl.classList.remove('paused');
   document.getElementById('practiceCountdownOverlay').style.display = 'none';
 }
-function runMusicCountdown(seconds){
+// "Ready" - 5 seconds of once-per-second beeps - 2 seconds of silence - then go.
+function runMusicCountdown(){
   return new Promise(resolve => {
     const overlay = document.getElementById('practiceCountdownOverlay');
+    const pulseEl = document.getElementById('practiceCountdownPulse');
+    const labelEl = document.getElementById('practiceCountdownLabel');
     overlay.style.display = 'flex';
-    let remaining = seconds;
     countdownActive = true;
+    pulseEl.classList.remove('paused');
+    labelEl.textContent = 'Ready — a beep every second';
+
+    let beepsElapsed = 1;
     beep(false);
-    countdownInterval = setInterval(() => {
-      remaining--;
-      if(remaining <= 0){
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-        overlay.style.display = 'none';
-        countdownActive = false;
-        beep(true);
-        resolve();
+    countdownTimer = setInterval(() => {
+      beepsElapsed++;
+      if(beepsElapsed >= 5){
+        clearInterval(countdownTimer);
+        pulseEl.classList.add('paused');
+        labelEl.textContent = 'Get set…';
+        countdownTimer = setTimeout(() => {
+          countdownTimer = null;
+          overlay.style.display = 'none';
+          countdownActive = false;
+          beep(true);
+          resolve();
+        }, 2000);
       } else {
         beep(false);
       }
@@ -1368,7 +1486,7 @@ window.startPracticeCamera = async function(){
 
   if(window.isMusicLoaded && window.isMusicLoaded()){
     if(window.pauseMusic) window.pauseMusic(); // always start the countdown from silence, even if it was already playing
-    runMusicCountdown(10).then(() => {
+    runMusicCountdown().then(() => {
       if(stream && window.playMusicFromStart) window.playMusicFromStart();
     });
   }
@@ -1742,6 +1860,7 @@ window.endPracticeSession = async function(){
   sessionEnding = true;
   const sessionId = Date.now();
   const duration = Math.round((Date.now() - sessionStart) / 1000);
+  const youtubeInfo = window.getActiveYoutubeInfo ? window.getActiveYoutubeInfo() : null;
   const session = {
     at: sessionId,
     mode,
@@ -1752,6 +1871,8 @@ window.endPracticeSession = async function(){
     jumpDetails: jumpDetails.slice(),
     onBeat: onBeatCount,
     totalBeats: totalBeatCount,
+    youtubeVideoId: youtubeInfo ? youtubeInfo.videoId : null,
+    youtubeTitle: youtubeInfo ? youtubeInfo.title : null,
     hasVideo: false
   };
   const videoUrl = await stopRecordingAndBuildReview();
@@ -1764,6 +1885,15 @@ window.endPracticeSession = async function(){
   if(videoUrl){
     document.getElementById('practiceReviewVideo').src = videoUrl;
     document.getElementById('practiceReviewCard').style.display = '';
+    const syncRow = document.getElementById('reviewYoutubeSyncRow');
+    if(session.youtubeVideoId && window.startYoutubeSyncPlayback){
+      syncRow.style.display = 'flex';
+      document.getElementById('reviewYoutubeSyncBtn').onclick = () => {
+        window.startYoutubeSyncPlayback(session.youtubeVideoId, 'practiceReviewVideo', session.at, session.youtubeAudioOffset);
+      };
+    } else {
+      syncRow.style.display = 'none';
+    }
   }
   sessionEnding = false;
 };
