@@ -390,8 +390,8 @@ footer{
         speed it up without changing the pitch, loop any section on repeat, and tap along to set a live count overlay.
         Everything happens on this device — nothing is ever uploaded anywhere.</p>
 
-      <input type="file" id="musicFileInput" accept="audio/*" style="display:none">
-      <input type="file" id="musicVideoFileInput" accept="video/*" style="display:none">
+      <input type="file" id="musicFileInput" accept="audio/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">
+      <input type="file" id="musicVideoFileInput" accept="video/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">
       <div class="practice-controls">
         <button class="btn" id="musicChooseBtn">➕ Add an Audio File</button>
         <button class="btn secondary" id="musicChooseVideoBtn">🎬 Add from Video/Photos</button>
