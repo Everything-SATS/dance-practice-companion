@@ -740,13 +740,17 @@ function fmtMusicTime(sec){
   return m + ':' + String(s).padStart(2, '0');
 }
 
-function openTrackInPlayer(id, name, blob){
+function openTrackInPlayer(id, name, blob, autoplay = true){
   if(currentMusicObjectUrl) URL.revokeObjectURL(currentMusicObjectUrl);
   currentMusicObjectUrl = URL.createObjectURL(blob);
   currentMusicTrackId = id;
   musicAudio.pause();
   musicAudio.src = currentMusicObjectUrl;
-  musicAudio.play().catch(() => {}); // the button that opens a track says "Play" - it should actually play
+  // Default is autoplay (the Music tab's "▶ Play" button and adding a new track should genuinely
+  // play). Selecting a track from the Practice tab tiles passes autoplay=false instead, since
+  // choosing music there should just select it silently - the countdown when you press Start
+  // Camera is what should actually start the sound, not the act of picking a track.
+  if(autoplay) musicAudio.play().catch(() => {});
   document.getElementById('musicTrackName').textContent = name;
   document.getElementById('musicPlayerArea').style.display = '';
   musicLoopStart = null; musicLoopEnd = null; musicLoopOn = false;
@@ -864,14 +868,17 @@ async function renderPracticeMusicTiles(){
   }
   wrap.innerHTML = tracks.map(t => `
     <div class="music-tile${t.id===currentMusicTrackId ? ' selected' : ''}" data-id="${t.id}">
-      ${t.id===currentMusicTrackId ? '▶ ' : '🎵 '}${escapeHtml(t.name)}
+      ${t.id===currentMusicTrackId ? '✓ ' : '🎵 '}${escapeHtml(t.name)}
     </div>`).join('');
   wrap.querySelectorAll('.music-tile').forEach(tile => {
     tile.addEventListener('click', async () => {
       const id = Number(tile.dataset.id);
       const tracks2 = await getAllMusicTracks();
       const track = tracks2.find(t => t.id === id);
-      if(track) openTrackInPlayer(track.id, track.name, track.blob);
+      // autoplay=false: selecting a track here only selects it - pressing Start Camera and its
+      // countdown is what actually starts the music, so choosing a song never plays it "loose"
+      // without the camera running.
+      if(track) openTrackInPlayer(track.id, track.name, track.blob, false);
     });
   });
 }
