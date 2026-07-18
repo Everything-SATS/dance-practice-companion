@@ -1177,9 +1177,9 @@ showSkeletonToggle.addEventListener('change', () => {
 
 let poseLandmarker = null;
 let stream = null;
-// Rear camera is the default since dancers are often set up on a tripod, where the rear camera
-// is usually better quality anyway; front-facing gets mirrored to feel like a mirror, rear doesn't.
-let currentFacingMode = localStorage.getItem('dancePractice_facingMode') || 'environment';
+// Front camera is the default (mirrored, like a practice mirror); a switch button lets a dancer
+// on a tripod flip to the rear camera instead. Front-facing gets mirrored, rear doesn't.
+let currentFacingMode = localStorage.getItem('dancePractice_facingMode') || 'user';
 let rafId = null;
 let mode = 'free';
 let sessionStart = null;
