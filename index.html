@@ -282,7 +282,8 @@ footer{
         <button class="btn secondary small" id="practiceMusicToggleBtn">▶ Play</button>
       </div>
 
-      <div class="practice-mode-row" id="practiceModeRow" style="display:none">
+      <h3 style="margin-top:16px">⚙️ Practice Settings</h3>
+      <div class="practice-mode-row" id="practiceModeRow">
         <button class="tab-btn active" data-mode="free" onclick="setPracticeMode('free')">🪞 Free Practice</button>
         <button class="tab-btn" data-mode="rhythm" onclick="setPracticeMode('rhythm')">🥁 Rhythm Practice</button>
         <button class="tab-btn" data-mode="reps" onclick="setPracticeMode('reps')">🔁 Repetition</button>
@@ -1517,6 +1518,10 @@ function updateRefNote(){
     note.style.display = 'none';
   }
 }
+
+// Sets the correct settings visibility (bpm/reps rows, reference note) for the default mode
+// straight away, so every option is visible and choosable before the camera is even opened.
+window.setPracticeMode('free');
 
 function startMetronomeInterval(){
   const intervalMs = 60000 / bpm;
