@@ -183,7 +183,6 @@ footer{
   font-family:inherit;font-size:0.85rem}
 .music-track-name{font-weight:800;text-align:center;margin-bottom:10px;word-break:break-word}
 .music-time-row{display:flex;justify-content:space-between;font-size:.76rem;color:var(--ink-soft);margin:4px 0 14px}
-#musicEmptyState{text-align:center;padding:10px 0}
 .practice-log-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
   border-bottom:1px solid var(--line)}
 .practice-log-item:last-child{border-bottom:none}
@@ -193,6 +192,20 @@ footer{
 .pl-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
 .practice-ref-note{background:var(--purple-light);border-radius:10px;padding:8px 12px;font-size:.76rem;
   color:var(--ink);text-align:center;margin-bottom:12px}
+.practice-countdown{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(20,16,30,0.55);color:#fff;text-align:center;padding:20px}
+.pc-number{font-size:5rem;font-weight:900;line-height:1;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
+.pc-label{font-size:.95rem;margin-top:10px;opacity:0.92}
+.music-track-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--line)}
+.music-track-item:last-child{border-bottom:none}
+.music-track-item.playing{background:var(--purple-light);border-radius:10px;padding-left:10px;padding-right:10px;margin:0 -10px}
+.mt-info{min-width:0;flex:1}
+.mt-name{font-weight:700;font-size:.9rem;word-break:break-word}
+.mt-meta{font-size:.72rem;color:var(--ink-soft);margin-top:2px}
+.mt-actions{display:flex;gap:6px;flex-shrink:0}
+.yt-embed-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
+.yt-embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 </style>
 </head>
 <body>
@@ -226,11 +239,21 @@ footer{
         <canvas id="practiceCanvas"></canvas>
         <canvas id="practiceRecordCanvas" style="display:none"></canvas>
         <div class="practice-placeholder" id="practicePlaceholder">Tap "Start Camera" below to begin</div>
+        <div class="practice-countdown" id="practiceCountdownOverlay" style="display:none">
+          <div class="pc-number" id="practiceCountdownNumber">10</div>
+          <div class="pc-label">Get ready — music starts soon</div>
+        </div>
       </div>
 
       <div class="practice-controls">
         <button class="btn" id="practiceStartBtn" onclick="startPracticeCamera()">▶ Start Camera</button>
         <button class="btn danger" id="practiceStopBtn" onclick="stopPracticeCamera()" style="display:none">■ Stop Camera</button>
+      </div>
+
+      <div class="bpm-row" id="practiceMusicBar" style="display:none">
+        <span>🎵</span>
+        <span id="practiceMusicName" style="flex:1;font-weight:700;font-size:.85rem;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <button class="btn secondary small" id="practiceMusicToggleBtn">▶ Play</button>
       </div>
 
       <div class="practice-mode-row" id="practiceModeRow" style="display:none">
@@ -300,12 +323,15 @@ footer{
         Everything happens on this device — nothing is ever uploaded anywhere.</p>
 
       <input type="file" id="musicFileInput" accept="audio/*,video/*" style="display:none">
-      <div id="musicEmptyState">
-        <button class="btn" id="musicChooseBtn">📁 Choose a Track or Video</button>
+      <div class="practice-controls">
+        <button class="btn" id="musicChooseBtn">➕ Add a Track or Video</button>
       </div>
       <div id="musicExtractStatus" style="text-align:center;margin-top:10px;display:none;font-size:.78rem;color:var(--ink-soft)"></div>
 
-      <div id="musicPlayerArea" style="display:none">
+      <h3 style="margin-top:18px">Your Tracks</h3>
+      <div id="musicTrackList"><p class="empty-note">No tracks saved yet — add one above.</p></div>
+
+      <div id="musicPlayerArea" style="display:none;margin-top:18px;padding-top:14px;border-top:2px solid var(--line)">
         <div class="music-track-name" id="musicTrackName"></div>
         <audio id="musicAudio" preload="metadata"></audio>
         <input type="range" id="musicSeekBar" min="0" max="100" value="0" step="0.1" style="width:100%">
@@ -315,7 +341,6 @@ footer{
         </div>
         <div class="practice-controls">
           <button class="btn" id="musicPlayBtn">▶ Play</button>
-          <button class="btn ghost" id="musicChangeBtn">📁 Change Track</button>
         </div>
 
         <div class="bpm-row">
@@ -342,6 +367,28 @@ footer{
             <button class="btn ghost small" id="musicTapResetBtn">Reset</button>
           </div>
           <div class="pl-date" id="musicTapStatus">Tap along with the music, on every count, at least 4 times to set the tempo.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>▶ Practice Along with YouTube</h2>
+      <p class="practice-intro">Paste a YouTube link to play it here for practice — it streams straight from YouTube
+        itself, the same as watching it there. Nothing is downloaded, extracted, or saved, so this video won't appear
+        in Your Tracks, won't keep its pitch when you change speed, and can't be included in a session recording.
+        For all of that, add an uploaded track above instead.</p>
+      <div class="practice-controls">
+        <input type="text" id="youtubeUrlInput" placeholder="Paste a YouTube link…"
+          style="flex:1;min-width:180px;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:var(--card-bg);color:var(--ink);font-family:inherit;font-size:.9rem">
+        <button class="btn secondary" id="youtubeLoadBtn">Load</button>
+      </div>
+      <div id="youtubeError" style="display:none;color:#e05a7a;font-size:.8rem;margin-top:8px"></div>
+      <div id="youtubePlayerWrap" style="display:none;margin-top:12px">
+        <div class="yt-embed-wrap"><div id="youtubePlayer"></div></div>
+        <div class="bpm-row" style="margin-top:10px">
+          <span>Speed</span>
+          <input type="range" id="youtubeSpeedSlider" min="25" max="200" value="100" step="25">
+          <b id="youtubeSpeedLabel">100%</b>
         </div>
       </div>
     </div>
@@ -462,33 +509,55 @@ let musicDbPromise = null;
 function openMusicDb(){
   if(musicDbPromise) return musicDbPromise;
   musicDbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open('dancePracticeMusicTrack', 1);
+    const req = indexedDB.open('dancePracticeMusicTrack', 2);
     req.onupgradeneeded = () => {
       const db = req.result;
       if(!db.objectStoreNames.contains('track')) db.createObjectStore('track', { keyPath: 'id' });
+      if(!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'id', autoIncrement: true });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
   return musicDbPromise;
 }
-async function saveMusicTrack(name, blob){
+async function addMusicTrack(name, blob){
   const db = await openMusicDb();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('track', 'readwrite');
-    tx.objectStore('track').put({ id: 'current', name, blob });
+    const tx = db.transaction('tracks', 'readwrite');
+    const req = tx.objectStore('tracks').add({ name, blob, addedAt: Date.now() });
+    req.onsuccess = () => resolve(req.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getAllMusicTracks(){
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('tracks', 'readonly');
+    const req = tx.objectStore('tracks').getAll();
+    req.onsuccess = () => resolve((req.result || []).sort((a,b) => b.addedAt - a.addedAt));
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteMusicTrack(id){
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('tracks', 'readwrite');
+    tx.objectStore('tracks').delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
-async function loadMusicTrack(){
+async function migrateOldSingleTrack(){
+  const existing = await getAllMusicTracks();
+  if(existing.length) return;
   const db = await openMusicDb();
-  return new Promise((resolve, reject) => {
+  const old = await new Promise((resolve) => {
     const tx = db.transaction('track', 'readonly');
     const req = tx.objectStore('track').get('current');
     req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => resolve(null);
   });
+  if(old && old.blob) await addMusicTrack(old.name || 'My Track', old.blob);
 }
 
 const musicAudio = document.getElementById('musicAudio');
@@ -497,6 +566,33 @@ let musicTapTimes = [];
 let musicBeatSeconds = null;
 let musicAnchorAudioTime = null;
 let musicCountRaf = null;
+let currentMusicTrackId = null;
+let currentMusicObjectUrl = null;
+
+// Routes the <audio> element's output through the Web Audio API so a practice-session recording
+// can capture the music track alongside the camera video, while it keeps playing out loud as normal.
+// createMediaElementSource can only be called once per <audio> element, hence the caching.
+let musicAudioCtx = null, musicSourceNode = null, musicDestNode = null;
+window.getMusicRecordingTrack = function(){
+  if(currentMusicTrackId == null) return null;
+  if(!musicAudioCtx){
+    musicAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    musicSourceNode = musicAudioCtx.createMediaElementSource(musicAudio);
+    musicDestNode = musicAudioCtx.createMediaStreamDestination();
+    musicSourceNode.connect(musicDestNode);
+    musicSourceNode.connect(musicAudioCtx.destination);
+  }
+  if(musicAudioCtx.state === 'suspended') musicAudioCtx.resume().catch(() => {});
+  const tracks = musicDestNode.stream.getAudioTracks();
+  return tracks.length ? tracks[0] : null;
+};
+window.isMusicLoaded = function(){ return currentMusicTrackId != null; };
+window.isMusicPlaying = function(){ return currentMusicTrackId != null && !musicAudio.paused; };
+window.playMusicFromStart = function(){
+  if(currentMusicTrackId == null) return;
+  musicAudio.currentTime = 0;
+  musicAudio.play().catch(() => {});
+};
 
 function fmtMusicTime(sec){
   if(!isFinite(sec)) return '0:00';
@@ -504,36 +600,59 @@ function fmtMusicTime(sec){
   return m + ':' + String(s).padStart(2, '0');
 }
 
-function audioBufferToWavBlob(buffer){
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate = buffer.sampleRate;
-  const numFrames = buffer.length;
+// The sample-by-sample WAV encode below is real CPU work (millions of iterations for a
+// multi-minute track) - running it on the main thread would freeze the UI while it's mid-encode,
+// so it's offloaded to a Web Worker (built from an inline Blob, no extra file needed) and only
+// the async decodeAudioData + a fast native slice() copy happen on the main thread.
+const wavWorkerSource = `
+self.onmessage = function(e){
+  const { channelData, sampleRate, numChannels, numFrames } = e.data;
   const bytesPerSample = 2;
   const blockAlign = numChannels * bytesPerSample;
   const dataSize = numFrames * blockAlign;
   const arrBuf = new ArrayBuffer(44 + dataSize);
   const view = new DataView(arrBuf);
   function writeString(offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
-
-  writeString(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(8, 'WAVE');
-  writeString(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true); view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bytesPerSample * 8, true);
-  writeString(36, 'data'); view.setUint32(40, dataSize, true);
-
-  const channelData = [];
-  for(let ch = 0; ch < numChannels; ch++) channelData.push(buffer.getChannelData(ch));
+  writeString(0,'RIFF'); view.setUint32(4,36+dataSize,true); writeString(8,'WAVE');
+  writeString(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
+  view.setUint16(22,numChannels,true); view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*blockAlign,true); view.setUint16(32,blockAlign,true);
+  view.setUint16(34,bytesPerSample*8,true);
+  writeString(36,'data'); view.setUint32(40,dataSize,true);
   let offset = 44;
-  for(let i = 0; i < numFrames; i++){
-    for(let ch = 0; ch < numChannels; ch++){
+  for(let i=0;i<numFrames;i++){
+    for(let ch=0;ch<numChannels;ch++){
       let sample = Math.max(-1, Math.min(1, channelData[ch][i]));
-      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      sample = sample < 0 ? sample*0x8000 : sample*0x7FFF;
       view.setInt16(offset, sample, true);
       offset += 2;
     }
   }
-  return new Blob([arrBuf], { type: 'audio/wav' });
+  self.postMessage({ buffer: arrBuf }, [arrBuf]);
+};
+`;
+let wavWorker = null;
+function getWavWorker(){
+  if(!wavWorker){
+    const blob = new Blob([wavWorkerSource], { type: 'application/javascript' });
+    wavWorker = new Worker(URL.createObjectURL(blob));
+  }
+  return wavWorker;
+}
+
+function audioBufferToWavBlobAsync(buffer){
+  const numChannels = buffer.numberOfChannels;
+  const channelData = [];
+  for(let ch = 0; ch < numChannels; ch++) channelData.push(buffer.getChannelData(ch).slice());
+  return new Promise((resolve, reject) => {
+    const worker = getWavWorker();
+    worker.onmessage = (e) => resolve(new Blob([e.data.buffer], { type: 'audio/wav' }));
+    worker.onerror = (err) => reject(err);
+    worker.postMessage(
+      { channelData, sampleRate: buffer.sampleRate, numChannels, numFrames: buffer.length },
+      channelData.map(cd => cd.buffer)
+    );
+  });
 }
 
 async function extractAudioFromVideoFile(file){
@@ -541,26 +660,89 @@ async function extractAudioFromVideoFile(file){
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   try{
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    return audioBufferToWavBlob(audioBuffer);
+    return await audioBufferToWavBlobAsync(audioBuffer);
   } finally {
     ctx.close();
   }
 }
 
-function openTrackInPlayer(name, blob){
-  const url = URL.createObjectURL(blob);
-  musicAudio.src = url;
+function openTrackInPlayer(id, name, blob){
+  if(currentMusicObjectUrl) URL.revokeObjectURL(currentMusicObjectUrl);
+  currentMusicObjectUrl = URL.createObjectURL(blob);
+  currentMusicTrackId = id;
+  musicAudio.pause();
+  musicAudio.src = currentMusicObjectUrl;
   document.getElementById('musicTrackName').textContent = name;
-  document.getElementById('musicEmptyState').style.display = 'none';
   document.getElementById('musicPlayerArea').style.display = '';
   musicLoopStart = null; musicLoopEnd = null; musicLoopOn = false;
   document.getElementById('musicLoopLabel').textContent = 'No section set yet';
   document.getElementById('musicLoopToggleBtn').textContent = '🔁 Loop Off';
   resetMusicTaps();
+  renderMusicTrackList();
+  updatePracticeMusicBar();
+}
+
+function updatePracticeMusicBar(){
+  const bar = document.getElementById('practiceMusicBar');
+  if(currentMusicTrackId == null){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('practiceMusicName').textContent = document.getElementById('musicTrackName').textContent;
+  document.getElementById('practiceMusicToggleBtn').textContent = musicAudio.paused ? '▶ Play' : '⏸ Pause';
+}
+document.getElementById('practiceMusicToggleBtn').addEventListener('click', () => {
+  if(musicAudio.paused) musicAudio.play(); else musicAudio.pause();
+});
+
+function fmtTrackDate(ts){
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+async function renderMusicTrackList(){
+  const listEl = document.getElementById('musicTrackList');
+  const tracks = await getAllMusicTracks();
+  if(!tracks.length){
+    listEl.innerHTML = '<p class="empty-note">No tracks saved yet — add one above.</p>';
+    return;
+  }
+  listEl.innerHTML = tracks.map(t => `
+    <div class="music-track-item${t.id===currentMusicTrackId ? ' playing' : ''}">
+      <div class="mt-info">
+        <div class="mt-name">${t.id===currentMusicTrackId ? '▶ ' : ''}${escapeHtml(t.name)}</div>
+        <div class="mt-meta">Added ${fmtTrackDate(t.addedAt)}</div>
+      </div>
+      <div class="mt-actions">
+        <button class="btn secondary small mt-play-btn" data-id="${t.id}">▶ Play</button>
+        <button class="btn danger small mt-delete-btn" data-id="${t.id}">🗑</button>
+      </div>
+    </div>`).join('');
+
+  listEl.querySelectorAll('.mt-play-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const tracks2 = await getAllMusicTracks();
+      const track = tracks2.find(t => t.id === id);
+      if(track) openTrackInPlayer(track.id, track.name, track.blob);
+    });
+  });
+  listEl.querySelectorAll('.mt-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.id);
+      confirmAction('Delete this track? This cannot be undone.', async () => {
+        await deleteMusicTrack(id);
+        if(id === currentMusicTrackId){
+          currentMusicTrackId = null;
+          musicAudio.pause();
+          musicAudio.removeAttribute('src');
+          document.getElementById('musicPlayerArea').style.display = 'none';
+          updatePracticeMusicBar();
+        }
+        renderMusicTrackList();
+      });
+    });
+  });
 }
 
 document.getElementById('musicChooseBtn').addEventListener('click', () => document.getElementById('musicFileInput').click());
-document.getElementById('musicChangeBtn').addEventListener('click', () => document.getElementById('musicFileInput').click());
 document.getElementById('musicFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if(!file) return;
@@ -573,15 +755,15 @@ document.getElementById('musicFileInput').addEventListener('change', async (e) =
     try{
       const wavBlob = await extractAudioFromVideoFile(file);
       const trackName = file.name.replace(/\.[^.]+$/, '') + ' (audio)';
-      await saveMusicTrack(trackName, wavBlob);
-      openTrackInPlayer(trackName, wavBlob);
+      const id = await addMusicTrack(trackName, wavBlob);
+      openTrackInPlayer(id, trackName, wavBlob);
       statusEl.style.display = 'none';
     }catch(err){
       statusEl.textContent = "Couldn't pull the audio out of that video in this browser — this works best in Chrome. You could also try saving the video from WhatsApp with a different codec, or share it as a voice note instead.";
     }
   } else {
-    await saveMusicTrack(file.name, file);
-    openTrackInPlayer(file.name, file);
+    const id = await addMusicTrack(file.name, file);
+    openTrackInPlayer(id, file.name, file);
     statusEl.style.display = 'none';
   }
   e.target.value = '';
@@ -598,9 +780,26 @@ musicAudio.addEventListener('timeupdate', () => {
     musicAudio.currentTime = musicLoopStart || 0;
   }
 });
-musicAudio.addEventListener('ended', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; });
-musicAudio.addEventListener('play', () => { document.getElementById('musicPlayBtn').textContent = '⏸ Pause'; startMusicCountLoop(); });
-musicAudio.addEventListener('pause', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; });
+// Keeps the screen awake while music is playing - otherwise the phone can lock itself and
+// stop playback mid-track, which is exactly what practicing to a track is trying to avoid.
+let musicWakeLock = null;
+async function requestMusicWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    musicWakeLock = await navigator.wakeLock.request('screen');
+    musicWakeLock.addEventListener('release', () => { musicWakeLock = null; });
+  }catch(err){ /* e.g. battery saver mode blocked it - playback still works, just isn't screen-locked */ }
+}
+function releaseMusicWakeLock(){
+  if(musicWakeLock){ musicWakeLock.release().catch(() => {}); musicWakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && !musicAudio.paused && !musicWakeLock) requestMusicWakeLock();
+});
+
+musicAudio.addEventListener('ended', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; releaseMusicWakeLock(); updatePracticeMusicBar(); });
+musicAudio.addEventListener('play', () => { document.getElementById('musicPlayBtn').textContent = '⏸ Pause'; startMusicCountLoop(); requestMusicWakeLock(); updatePracticeMusicBar(); });
+musicAudio.addEventListener('pause', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; releaseMusicWakeLock(); updatePracticeMusicBar(); });
 
 document.getElementById('musicSeekBar').addEventListener('input', (e) => { musicAudio.currentTime = Number(e.target.value); });
 document.getElementById('musicPlayBtn').addEventListener('click', () => {
@@ -684,7 +883,80 @@ function startMusicCountLoop(){
   step();
 }
 
-loadMusicTrack().then(track => { if(track) openTrackInPlayer(track.name, track.blob); }).catch(()=>{});
+// --- YouTube practice-along (official embedded player only - streams live from YouTube,
+// nothing is ever downloaded, extracted, or stored; kept fully separate from the local
+// track library since a cross-origin embed's audio can't legally or technically be captured). ---
+let ytPlayer = null;
+let ytApiReady = false;
+let ytPendingVideoId = null;
+
+function loadYoutubeApi(){
+  if(window.YT && window.YT.Player){ ytApiReady = true; createYoutubePlayer(ytPendingVideoId); return; }
+  if(document.getElementById('youtubeApiScript')) return;
+  const tag = document.createElement('script');
+  tag.id = 'youtubeApiScript';
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+  window.onYouTubeIframeAPIReady = () => {
+    ytApiReady = true;
+    if(ytPendingVideoId) createYoutubePlayer(ytPendingVideoId);
+  };
+}
+
+function extractYoutubeId(input){
+  const trimmed = input.trim();
+  const match = trimmed.match(/(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  if(match) return match[1];
+  if(/^[A-Za-z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  return null;
+}
+
+function createYoutubePlayer(videoId){
+  document.getElementById('youtubePlayerWrap').style.display = '';
+  document.getElementById('youtubeError').style.display = 'none';
+  if(ytPlayer && ytPlayer.loadVideoById){
+    ytPlayer.loadVideoById(videoId);
+    return;
+  }
+  ytPlayer = new YT.Player('youtubePlayer', {
+    videoId,
+    playerVars: { rel: 0, playsinline: 1 },
+    events: {
+      onError: () => {
+        const errEl = document.getElementById('youtubeError');
+        errEl.style.display = '';
+        errEl.textContent = "Couldn't load that video — it may be private, region-locked, or the link wasn't recognised.";
+      }
+    }
+  });
+}
+
+document.getElementById('youtubeLoadBtn').addEventListener('click', () => {
+  const raw = document.getElementById('youtubeUrlInput').value;
+  const id = extractYoutubeId(raw);
+  const errEl = document.getElementById('youtubeError');
+  if(!id){
+    errEl.style.display = '';
+    errEl.textContent = "That doesn't look like a YouTube link — paste the full URL from the address bar or share button.";
+    return;
+  }
+  errEl.style.display = 'none';
+  localStorage.setItem('dancePractice_lastYoutubeId', id);
+  ytPendingVideoId = id;
+  if(ytApiReady) createYoutubePlayer(id);
+  else loadYoutubeApi();
+});
+
+document.getElementById('youtubeSpeedSlider').addEventListener('input', (e) => {
+  const pct = Number(e.target.value);
+  document.getElementById('youtubeSpeedLabel').textContent = pct + '%';
+  if(ytPlayer && ytPlayer.setPlaybackRate) ytPlayer.setPlaybackRate(pct / 100);
+});
+
+const lastYoutubeId = localStorage.getItem('dancePractice_lastYoutubeId');
+if(lastYoutubeId) document.getElementById('youtubeUrlInput').value = 'https://youtu.be/' + lastYoutubeId;
+
+migrateOldSingleTrack().then(renderMusicTrackList).catch(() => renderMusicTrackList());
 
 /* ---------- init ---------- */
 renderPracticeLog();
@@ -815,6 +1087,35 @@ function beep(accent){
   osc.start(); osc.stop(audioCtx.currentTime + 0.13);
 }
 
+let countdownInterval = null;
+function cancelMusicCountdown(){
+  if(countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
+  document.getElementById('practiceCountdownOverlay').style.display = 'none';
+}
+function runMusicCountdown(seconds){
+  return new Promise(resolve => {
+    const overlay = document.getElementById('practiceCountdownOverlay');
+    const numberEl = document.getElementById('practiceCountdownNumber');
+    overlay.style.display = 'flex';
+    let remaining = seconds;
+    numberEl.textContent = remaining;
+    beep(false);
+    countdownInterval = setInterval(() => {
+      remaining--;
+      if(remaining <= 0){
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        overlay.style.display = 'none';
+        beep(true);
+        resolve();
+      } else {
+        numberEl.textContent = remaining;
+        beep(false);
+      }
+    }, 1000);
+  });
+}
+
 async function ensurePoseLandmarker(){
   if(poseLandmarker) return poseLandmarker;
   const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
@@ -863,7 +1164,12 @@ function startRecording(){
   recordCanvas.width = video.videoWidth;
   recordCanvas.height = video.videoHeight;
   recordedChunks = [];
-  const recordStream = recordCanvas.captureStream(30);
+  const tracks = [recordCanvas.captureStream(30).getVideoTracks()[0]];
+  if(window.getMusicRecordingTrack){
+    const musicTrack = window.getMusicRecordingTrack();
+    if(musicTrack) tracks.push(musicTrack);
+  }
+  const recordStream = new MediaStream(tracks);
   const mimeType = pickRecorderMime();
   try{
     mediaRecorder = new MediaRecorder(recordStream, mimeType ? { mimeType } : undefined);
@@ -887,6 +1193,21 @@ function stopRecordingAndBuildReview(){
   });
 }
 
+let practiceWakeLock = null;
+async function requestPracticeWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    practiceWakeLock = await navigator.wakeLock.request('screen');
+    practiceWakeLock.addEventListener('release', () => { practiceWakeLock = null; });
+  }catch(err){ /* e.g. battery saver blocked it - session still runs, just isn't screen-locked */ }
+}
+function releasePracticeWakeLock(){
+  if(practiceWakeLock){ practiceWakeLock.release().catch(() => {}); practiceWakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && stream && !practiceWakeLock) requestPracticeWakeLock();
+});
+
 window.startPracticeCamera = async function(){
   try{
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
@@ -894,6 +1215,7 @@ window.startPracticeCamera = async function(){
     notify("Couldn't access your camera — check that this site has camera permission.");
     return;
   }
+  requestPracticeWakeLock();
   video.srcObject = stream;
   await new Promise(resolve => { video.onloadedmetadata = resolve; });
   canvas.width = video.videoWidth;
@@ -918,6 +1240,12 @@ window.startPracticeCamera = async function(){
 
   startRecording();
 
+  if(window.isMusicLoaded && window.isMusicLoaded() && !window.isMusicPlaying()){
+    runMusicCountdown(10).then(() => {
+      if(stream && window.playMusicFromStart) window.playMusicFromStart();
+    });
+  }
+
   placeholder.textContent = 'Loading pose model…';
   placeholder.style.display = '';
   await ensurePoseLandmarker();
@@ -927,6 +1255,8 @@ window.startPracticeCamera = async function(){
 };
 
 window.stopPracticeCamera = function(){
+  releasePracticeWakeLock();
+  cancelMusicCountdown();
   if(rafId) cancelAnimationFrame(rafId);
   rafId = null;
   if(mediaRecorder && mediaRecorder.state!=='inactive'){ mediaRecorder.stop(); }
