@@ -730,6 +730,7 @@ window.playMusicFromStart = function(){
   musicAudio.play().catch(() => {});
 };
 window.pauseMusic = function(){ musicAudio.pause(); };
+window.pauseYoutube = function(){ if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); };
 
 function fmtMusicTime(sec){
   if(!isFinite(sec)) return '0:00';
@@ -1541,6 +1542,8 @@ window.confirmStopCamera = function(){
 window.stopPracticeCamera = function(){
   releasePracticeWakeLock();
   cancelMusicCountdown();
+  if(window.pauseMusic) window.pauseMusic();
+  if(window.pauseYoutube) window.pauseYoutube();
   if(rafId) cancelAnimationFrame(rafId);
   rafId = null;
   if(mediaRecorder && mediaRecorder.state!=='inactive'){ mediaRecorder.stop(); }
