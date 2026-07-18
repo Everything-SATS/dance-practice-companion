@@ -1127,32 +1127,17 @@ function ensureYoutubePlayerLoaded(videoId, onReady){
 // Remembers the "song actually starts here" point per YouTube video (not per session), so once
 // you've marked it once, every future session using that same link skips straight past the ad -
 // this is a live seek within the official embed, not a saved/edited copy of anything.
-function getYoutubeOffsets(){
-  try{ return JSON.parse(localStorage.getItem('dancePractice_youtubeOffsets') || '{}'); }
-  catch(err){ return {}; }
-}
-function saveYoutubeOffset(videoId, offset){
-  const offsets = getYoutubeOffsets();
-  offsets[videoId] = offset;
-  localStorage.setItem('dancePractice_youtubeOffsets', JSON.stringify(offsets));
-}
-
-window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, unusedSavedOffset,
+// YouTube's ad insertion is dynamic - a different (or no) ad can play on any given view, so a
+// remembered timestamp from one playthrough has no guarantee of matching the next one. Rather
+// than pretend to "auto-skip" the ad from a stale offset, this is a manual sync you do live each
+// time: play the track from the start, listen past whatever ad shows up (if any), and mark the
+// moment the real song begins - then that starts the saved video in sync, for this viewing only.
+window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, unused,
     calibrateRowId, calibrateNoteId, markBtnId){
   const v = document.getElementById(videoElId);
   const calibrateRow = document.getElementById(calibrateRowId || 'reviewYoutubeCalibrateRow');
   const calibrateNote = document.getElementById(calibrateNoteId || 'reviewYoutubeCalibrateNote');
   const markBtn = document.getElementById(markBtnId || 'reviewYoutubeMarkBtn');
-  const knownOffset = getYoutubeOffsets()[videoId];
-
-  if(knownOffset != null){
-    ensureYoutubePlayerLoaded(videoId, () => {
-      if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(knownOffset, true);
-      if(ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
-      if(v){ v.currentTime = 0; v.play().catch(() => {}); }
-    });
-    return;
-  }
 
   ensureYoutubePlayerLoaded(videoId, () => {
     if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(0, true);
@@ -1162,8 +1147,6 @@ window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, unused
   if(calibrateNote){ calibrateNote.style.display = ''; }
   if(markBtn){
     markBtn.onclick = () => {
-      const offset = (ytPlayer && ytPlayer.getCurrentTime) ? ytPlayer.getCurrentTime() : 0;
-      saveYoutubeOffset(videoId, offset);
       if(calibrateRow) calibrateRow.style.display = 'none';
       if(calibrateNote) calibrateNote.style.display = 'none';
       if(v){ v.currentTime = 0; v.play().catch(() => {}); }
