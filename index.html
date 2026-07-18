@@ -231,6 +231,9 @@ footer{
   <section id="tab-practice" class="tab-panel active">
     <div class="card">
       <h2>🎥 Practice Companion</h2>
+      <p style="font-size:.82rem;font-weight:700;color:var(--purple);text-align:center;margin:-2px 0 14px">
+        🎵 Choose music → ⏺ Press Start Camera → ⏱ 10s countdown to get in position → 💃 Dance!
+      </p>
       <p class="practice-intro">This watches your body position through your camera and gives you a skeleton overlay
         and quantitative movement data while you practice — hang time, estimated jump height, leg-split angle, and
         beat timing. <strong>Nothing is ever uploaded anywhere</strong> — everything happens on this device. Your
@@ -263,7 +266,7 @@ footer{
 
       <div class="practice-controls">
         <button class="btn" id="practiceStartBtn" onclick="startPracticeCamera()">▶ Start Camera</button>
-        <button class="btn danger" id="practiceStopBtn" onclick="stopPracticeCamera()" style="display:none">■ Stop Camera</button>
+        <button class="btn danger" id="practiceStopBtn" onclick="confirmStopCamera()" style="display:none">■ Stop Camera</button>
       </div>
 
       <div class="bpm-row" id="practiceMusicBar" style="display:none">
@@ -1201,8 +1204,10 @@ function beep(accent){
 }
 
 let countdownInterval = null;
+let countdownDisplayValue = null; // burned into the recording while the countdown runs, so it's visible on review
 function cancelMusicCountdown(){
   if(countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
+  countdownDisplayValue = null;
   document.getElementById('practiceCountdownOverlay').style.display = 'none';
 }
 function runMusicCountdown(seconds){
@@ -1212,6 +1217,7 @@ function runMusicCountdown(seconds){
     overlay.style.display = 'flex';
     let remaining = seconds;
     numberEl.textContent = remaining;
+    countdownDisplayValue = remaining;
     beep(false);
     countdownInterval = setInterval(() => {
       remaining--;
@@ -1219,10 +1225,12 @@ function runMusicCountdown(seconds){
         clearInterval(countdownInterval);
         countdownInterval = null;
         overlay.style.display = 'none';
+        countdownDisplayValue = null;
         beep(true);
         resolve();
       } else {
         numberEl.textContent = remaining;
+        countdownDisplayValue = remaining;
         beep(false);
       }
     }, 1000);
@@ -1359,12 +1367,28 @@ window.startPracticeCamera = async function(){
     });
   }
 
+  // Starts compositing real camera frames into the recording immediately, rather than waiting
+  // for the pose model to finish loading first - on a slow connection that load can take several
+  // seconds, during which the old code recorded nothing at all. The skeleton overlay and jump/
+  // rhythm detection simply switch on inside the loop once the model becomes ready.
+  detectLoop();
+
   placeholder.textContent = 'Loading pose model…';
   placeholder.style.display = '';
   await ensurePoseLandmarker();
   placeholder.style.display = 'none';
+};
 
-  detectLoop();
+window.confirmStopCamera = function(){
+  openModal(`<h2>⚠️ Stop the Camera?</h2>
+    <p>Have you saved your recording? If you stop now without saving, this session's video will be lost for good.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button class="btn gold" id="stopSaveBtn">💾 Save My Recording</button>
+      <button class="btn danger" id="stopDiscardBtn">Stop Without Saving</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel — Keep Recording</button>
+    </div>`);
+  document.getElementById('stopSaveBtn').onclick = () => { closeModal(); window.endPracticeSession(); };
+  document.getElementById('stopDiscardBtn').onclick = () => { closeModal(); window.stopPracticeCamera(); };
 };
 
 window.stopPracticeCamera = function(){
@@ -1583,20 +1607,22 @@ function processRhythmDetection(landmarks, now){
 }
 
 function detectLoop(){
-  if(!poseLandmarker || video.paused || video.ended){ rafId = requestAnimationFrame(detectLoop); return; }
+  if(video.paused || video.ended){ rafId = requestAnimationFrame(detectLoop); return; }
   const now = performance.now();
-  const results = poseLandmarker.detectForVideo(video, now);
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(results.landmarks && results.landmarks[0]){
-    const landmarks = results.landmarks[0];
-    const world = results.worldLandmarks && results.worldLandmarks[0];
-    const drawingUtils = new DrawingUtils(ctx);
-    drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#f485bc', lineWidth: 3 });
-    drawingUtils.drawLandmarks(landmarks, { color: '#a98fe0', radius: 3 });
+  if(poseLandmarker){
+    const results = poseLandmarker.detectForVideo(video, now);
+    if(results.landmarks && results.landmarks[0]){
+      const landmarks = results.landmarks[0];
+      const world = results.worldLandmarks && results.worldLandmarks[0];
+      const drawingUtils = new DrawingUtils(ctx);
+      drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#f485bc', lineWidth: 3 });
+      drawingUtils.drawLandmarks(landmarks, { color: '#a98fe0', radius: 3 });
 
-    if(world) processJumpDetection(landmarks, world, now);
-    processRhythmDetection(landmarks, now);
+      if(world) processJumpDetection(landmarks, world, now);
+      processRhythmDetection(landmarks, now);
+    }
   }
 
   if(mediaRecorder && mediaRecorder.state==='recording'){
@@ -1604,6 +1630,20 @@ function detectLoop(){
     recordCtx.drawImage(video, 0, 0, recordCanvas.width, recordCanvas.height);
     recordCtx.drawImage(canvas, 0, 0, recordCanvas.width, recordCanvas.height);
     recordCtx.restore();
+
+    // Burns the get-ready countdown into the recording itself (not mirrored, so it reads correctly)
+    // so reviewing the video later still shows how much run-up time was given before the music started.
+    if(countdownDisplayValue != null){
+      recordCtx.save();
+      recordCtx.fillStyle = 'rgba(20,16,30,0.55)';
+      recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
+      recordCtx.fillStyle = '#fff';
+      recordCtx.textAlign = 'center';
+      recordCtx.textBaseline = 'middle';
+      recordCtx.font = `bold ${Math.round(recordCanvas.width * 0.28)}px sans-serif`;
+      recordCtx.fillText(String(countdownDisplayValue), recordCanvas.width / 2, recordCanvas.height / 2);
+      recordCtx.restore();
+    }
   }
 
   rafId = requestAnimationFrame(detectLoop);
