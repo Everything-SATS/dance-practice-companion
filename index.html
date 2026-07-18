@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dance Practice Companion</title>
+<meta name="theme-color" content="#a98fe0">
+<meta name="description" content="Free camera-based dance practice tool: skeleton overlay, jump height/split-angle measurement, rhythm and count training, and a music practice player. For dancers and dance schools.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dance Practice">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf9ff;
+  --card-bg:#ffffff;
+  --ink:#463c63;
+  --ink-soft:#8880a3;
+  --pink:#ec6fae;
+  --pink-light:#fbdcec;
+  --purple:#a98fe0;
+  --purple-light:#ede4fb;
+  --gold:#f0c24e;
+  --gold-light:#fdf2ce;
+  --blue:#57b8de;
+  --blue-light:#d8f1fa;
+  --line:#e8e1f5;
+  --shadow:0 3px 10px rgba(169,143,224,0.16);
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#221e33;
+    --card-bg:#2e2a47;
+    --ink:#f1edfb;
+    --ink-soft:#b6add1;
+    --pink:#f485bc;
+    --pink-light:#4a2f45;
+    --purple:#bba3ea;
+    --purple-light:#3b2f55;
+    --gold:#f5ce6c;
+    --gold-light:#453a22;
+    --blue:#72c6e6;
+    --blue-light:#20404a;
+    --line:#443a5e;
+    --shadow:0 4px 14px rgba(0,0,0,0.45);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#221e33; --card-bg:#2e2a47; --ink:#f1edfb; --ink-soft:#b6add1;
+  --pink:#f485bc; --pink-light:#4a2f45; --purple:#bba3ea; --purple-light:#3b2f55;
+  --gold:#f5ce6c; --gold-light:#453a22; --blue:#72c6e6; --blue-light:#20404a;
+  --line:#443a5e; --shadow:0 4px 14px rgba(0,0,0,0.45);
+}
+:root[data-theme="light"]{
+  --bg:#faf9ff; --card-bg:#ffffff; --ink:#463c63; --ink-soft:#8880a3;
+  --pink:#ec6fae; --pink-light:#fbdcec; --purple:#a98fe0; --purple-light:#ede4fb;
+  --gold:#f0c24e; --gold-light:#fdf2ce; --blue:#57b8de; --blue-light:#d8f1fa;
+  --line:#e8e1f5; --shadow:0 3px 10px rgba(169,143,224,0.16);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Quicksand',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+}
+button,input,select,textarea{font-family:inherit;color:inherit}
+h1,h2,h3{font-family:'Quicksand',sans-serif;font-weight:700;margin:0 0 8px}
+.app-header{
+  position:sticky;top:0;z-index:20;
+  background:linear-gradient(120deg,var(--blue-light) 0%,var(--pink-light) 35%,var(--gold-light) 65%,var(--purple-light) 100%);
+  padding:14px 16px 10px;
+  text-align:center;
+  border-bottom:3px solid var(--purple);
+  box-shadow:var(--shadow);
+}
+.app-title-main{
+  font-family:'Quicksand',sans-serif;
+  font-weight:700;
+  font-size:clamp(1.4rem,5vw,2rem);
+  color:var(--ink);
+}
+.app-title{
+  font-size:clamp(.85rem,2.6vw,1.05rem);
+  color:var(--ink-soft);
+  margin-top:2px;
+  font-weight:600;
+}
+nav.tabs{
+  position:sticky;top:0;z-index:19;
+  display:flex;flex-wrap:wrap;
+  gap:6px;justify-content:center;
+  background:var(--card-bg);
+  padding:8px;
+  border-bottom:2px solid var(--line);
+}
+.tab-btn{
+  border:2px solid transparent;
+  background:var(--pink-light);
+  color:var(--ink);
+  padding:8px 14px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:.95rem;
+  cursor:pointer;
+  transition:transform .15s ease, background .15s ease;
+}
+.tab-btn:hover{transform:translateY(-1px)}
+.tab-btn.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+main{max-width:960px;margin:0 auto;padding:16px}
+.tab-panel{display:none;animation:fadeIn .25s ease}
+.tab-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.card{
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:16px;
+}
+.btn{
+  background:var(--purple);
+  color:#fff;
+  border:none;
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-size:.95rem;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn.secondary{background:var(--pink)}
+.btn.gold{background:var(--gold);color:#4a3500}
+.btn.ghost{background:transparent;border:2px solid var(--purple);color:var(--purple)}
+.btn.small{padding:5px 10px;font-size:.8rem;border-radius:8px}
+.btn.danger{background:#e05a7a}
+.empty-note{color:var(--ink-soft);font-style:italic;padding:8px 0}
+
+footer{
+  background:var(--card-bg);border-top:2px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;margin-top:8px;
+}
+.copyright-note{font-size:.7rem;color:var(--ink-soft);margin:0;text-align:center}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;
+}
+.modal-overlay.hidden{display:none}
+.modal{
+  background:var(--card-bg);border-radius:var(--radius);padding:18px;
+  max-width:480px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow);
+}
+.modal img.full{max-width:100%;border-radius:12px}
+.close-x{float:right;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--ink-soft)}
+
+.practice-intro{font-size:.85rem;line-height:1.5;color:var(--ink-soft)}
+.practice-stage{position:relative;width:100%;max-width:480px;margin:14px auto;border-radius:var(--radius);
+  overflow:hidden;background:#1a1a24;aspect-ratio:3/4;}
+.practice-stage video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.practice-stage canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.practice-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#cfc9e6;font-size:.9rem;text-align:center;padding:20px}
+.practice-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.practice-mode-row{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.practice-live-stats{display:flex;justify-content:center;gap:18px;text-align:center;margin-bottom:10px}
+.practice-live-stats .stat-val{font-size:1.4rem;font-weight:800;color:var(--purple)}
+.practice-live-stats .stat-lbl{font-size:.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.bpm-row{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:10px}
+.bpm-row input[type=range]{flex:1;max-width:220px}
+.count-display{font-size:2.6rem;font-weight:900;text-align:center;color:var(--purple);margin-bottom:12px;
+  transition:transform 0.08s ease}
+.count-display.beat-one{color:var(--pink);transform:scale(1.15)}
+#countStyleSelect{padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);
+  font-family:inherit;font-size:0.85rem}
+.music-track-name{font-weight:800;text-align:center;margin-bottom:10px;word-break:break-word}
+.music-time-row{display:flex;justify-content:space-between;font-size:.76rem;color:var(--ink-soft);margin:4px 0 14px}
+#musicEmptyState{text-align:center;padding:10px 0}
+.practice-log-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--line)}
+.practice-log-item:last-child{border-bottom:none}
+.practice-log-item .pl-date{font-size:.78rem;color:var(--ink-soft)}
+.practice-log-item .pl-stats{font-size:.82rem;font-weight:600}
+.pl-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pl-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
+.practice-ref-note{background:var(--purple-light);border-radius:10px;padding:8px 12px;font-size:.76rem;
+  color:var(--ink);text-align:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title-main">🩰 Dance Practice Companion</div>
+  <div class="app-title">Free camera practice tool &amp; music player — for dancers and dance schools</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="practice">🎥 Practice</button>
+  <button class="tab-btn" data-tab="music">🎵 Music</button>
+</nav>
+
+<main>
+
+  <section id="tab-practice" class="tab-panel active">
+    <div class="card">
+      <h2>🎥 Practice Companion</h2>
+      <p class="practice-intro">This watches your body position through your camera and gives you a skeleton overlay
+        and quantitative movement data while you practice — hang time, estimated jump height, leg-split angle, and
+        beat timing. <strong>Nothing is ever uploaded anywhere</strong> — everything happens on this device. Your
+        session is recorded locally so you can review it afterwards (useful for practicing alone), but the video is
+        only kept in your browser and is discarded when you leave unless you choose to save it to your device.
+        It's a technique-improving tool, not a judge — it only measures numbers (height, angle, timing), it never
+        scores your artistry or technique. Height and angle are estimates from a single camera, not lab-grade motion
+        capture, so use them to track your own progress over time rather than as an exact measurement.</p>
+
+      <div class="practice-stage" id="practiceStage">
+        <video id="practiceVideo" autoplay playsinline muted></video>
+        <canvas id="practiceCanvas"></canvas>
+        <canvas id="practiceRecordCanvas" style="display:none"></canvas>
+        <div class="practice-placeholder" id="practicePlaceholder">Tap "Start Camera" below to begin</div>
+      </div>
+
+      <div class="practice-controls">
+        <button class="btn" id="practiceStartBtn" onclick="startPracticeCamera()">▶ Start Camera</button>
+        <button class="btn danger" id="practiceStopBtn" onclick="stopPracticeCamera()" style="display:none">■ Stop Camera</button>
+      </div>
+
+      <div class="practice-mode-row" id="practiceModeRow" style="display:none">
+        <button class="tab-btn active" data-mode="free" onclick="setPracticeMode('free')">🪞 Free Practice</button>
+        <button class="tab-btn" data-mode="rhythm" onclick="setPracticeMode('rhythm')">🥁 Rhythm Practice</button>
+        <button class="tab-btn" data-mode="reps" onclick="setPracticeMode('reps')">🔁 Repetition</button>
+      </div>
+
+      <div class="bpm-row" id="bpmRow" style="display:none">
+        <span>Slow</span>
+        <input type="range" id="bpmSlider" min="60" max="200" value="100" oninput="updateBpmLabel()">
+        <span>Fast</span>
+        <b id="bpmLabel">100 BPM</b>
+        <button class="btn secondary small" id="metronomeToggleBtn" onclick="toggleMetronome()">▶ Start Beat</button>
+      </div>
+      <div class="bpm-row" id="eightCountRow" style="display:none">
+        <span>Count style:</span>
+        <select id="countStyleSelect" onchange="setCountStyle(this.value)">
+          <option value="none">Plain click</option>
+          <option value="8">8-Count (jazz/commercial)</option>
+          <option value="4">4-Count</option>
+          <option value="3">Waltz / Ballet (3-Count)</option>
+        </select>
+      </div>
+      <div class="count-display" id="countDisplay" style="display:none">1</div>
+
+      <div class="bpm-row" id="repsRow" style="display:none">
+        <span>Target reps:</span>
+        <input type="range" id="repsTargetSlider" min="3" max="30" value="10" oninput="updateRepsLabel()">
+        <b id="repsTargetLabel">10 jumps</b>
+      </div>
+
+      <div class="practice-live-stats" id="practiceLiveStats" style="display:none">
+        <div><div class="stat-val" id="statJumps">0</div><div class="stat-lbl">Jumps</div></div>
+        <div><div class="stat-val" id="statBestJump">0.0s</div><div class="stat-lbl">Best Hang</div></div>
+        <div id="rhythmStatsBlock" style="display:none"><div class="stat-val" id="statOnBeat">0/0</div><div class="stat-lbl">On the Beat</div></div>
+        <div id="repsStatsBlock" style="display:none"><div class="stat-val" id="statRepsProgress">0/10</div><div class="stat-lbl">Reps Done</div></div>
+      </div>
+      <div class="practice-ref-note" id="practiceRefNote" style="display:none"></div>
+
+      <div class="practice-controls">
+        <button class="btn gold" id="practiceEndBtn" onclick="endPracticeSession()" style="display:none">🏁 End Session &amp; Save</button>
+      </div>
+    </div>
+
+    <div class="card" id="practiceReviewCard" style="display:none">
+      <h2>🎬 Review Your Session</h2>
+      <video id="practiceReviewVideo" controls style="width:100%;border-radius:var(--radius);background:#000"></video>
+      <div class="practice-controls" style="margin-top:12px">
+        <button class="btn" id="practiceSaveVideoBtn" onclick="savePracticeVideo()">💾 Save Video to Device</button>
+        <button class="btn ghost" id="practiceDiscardVideoBtn" onclick="discardPracticeVideo()">Discard</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Practice Log</h2>
+      <div id="practiceLogList"><p class="empty-note">No practice sessions logged yet — start the camera above to begin one.</p></div>
+    </div>
+  </section>
+
+  <section id="tab-music" class="tab-panel">
+    <div class="card">
+      <h2>🎵 Music Practice</h2>
+      <p class="practice-intro">Upload a track to practice to. Slow it down or speed it up without changing the pitch,
+        loop any section on repeat, and tap along to set a live count overlay. Your track stays only on this device
+        — never uploaded anywhere.</p>
+
+      <input type="file" id="musicFileInput" accept="audio/*" style="display:none">
+      <div id="musicEmptyState">
+        <button class="btn" id="musicChooseBtn">📁 Choose a Track</button>
+      </div>
+
+      <div id="musicPlayerArea" style="display:none">
+        <div class="music-track-name" id="musicTrackName"></div>
+        <audio id="musicAudio" preload="metadata"></audio>
+        <input type="range" id="musicSeekBar" min="0" max="100" value="0" step="0.1" style="width:100%">
+        <div class="music-time-row">
+          <span id="musicCurrentTime">0:00</span>
+          <span id="musicDuration">0:00</span>
+        </div>
+        <div class="practice-controls">
+          <button class="btn" id="musicPlayBtn">▶ Play</button>
+          <button class="btn ghost" id="musicChangeBtn">📁 Change Track</button>
+        </div>
+
+        <div class="bpm-row">
+          <span>Speed</span>
+          <input type="range" id="musicSpeedSlider" min="50" max="150" value="100">
+          <b id="musicSpeedLabel">100%</b>
+        </div>
+
+        <div class="card" style="background:var(--bg);box-shadow:none">
+          <h3 style="margin-top:0">Loop a Section</h3>
+          <div class="practice-controls">
+            <button class="btn secondary small" id="musicLoopStartBtn">Set Start</button>
+            <button class="btn secondary small" id="musicLoopEndBtn">Set End</button>
+            <button class="btn small" id="musicLoopToggleBtn">🔁 Loop Off</button>
+          </div>
+          <div class="pl-date" id="musicLoopLabel">No section set yet</div>
+        </div>
+
+        <div class="card" style="background:var(--bg);box-shadow:none">
+          <h3 style="margin-top:0">Count Overlay</h3>
+          <div class="count-display" id="musicCountDisplay" style="display:none">1</div>
+          <div class="practice-controls">
+            <button class="btn secondary small" id="musicTapBtn">👆 Tap to the Beat</button>
+            <button class="btn ghost small" id="musicTapResetBtn">Reset</button>
+          </div>
+          <div class="pl-date" id="musicTapStatus">Tap along with the music, on every count, at least 4 times to set the tempo.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p class="copyright-note">Everything stays on this device — nothing is ever uploaded anywhere. Free to use, no account needed.</p>
+</footer>
+
+<div class="modal-overlay hidden" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/* ---------- tabs ---------- */
+function switchTab(name){
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
+});
+
+/* ---------- modal helpers ---------- */
+function openModal(html){
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.add('hidden'); }
+function confirmAction(message, onYes){
+  openModal(`<p>${escapeHtml(message)}</p>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn danger small" id="confirmYesBtn">Yes, delete</button>
+      <button class="btn ghost small" onclick="closeModal()">Cancel</button>
+    </div>`);
+  document.getElementById('confirmYesBtn').onclick = ()=>{ closeModal(); onYes(); };
+}
+function notify(message){
+  openModal(`<p>${escapeHtml(message)}</p><div style="margin-top:14px"><button class="btn small" onclick="closeModal()">OK</button></div>`);
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+
+/* ---------- practice log storage (local only - no account, no cloud sync) ---------- */
+let practice = JSON.parse(localStorage.getItem('dancePractice_sessions') || '[]');
+
+function savePractice(){ localStorage.setItem('dancePractice_sessions', JSON.stringify(practice)); }
+
+function commitPracticeSession(session){
+  practice.push(session);
+  savePractice();
+  renderPracticeLog();
+  notify('Session saved to your Practice Log! 🎉');
+}
+
+function renderPracticeLog(){
+  const list = document.getElementById('practiceLogList');
+  if(!practice.length){ list.innerHTML = '<p class="empty-note">No practice sessions logged yet — start the camera above to begin one.</p>'; return; }
+  const sorted = practice.slice().sort((a,b)=> b.at - a.at);
+  list.innerHTML = sorted.map(s=>{
+    const when = new Date(s.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
+      new Date(s.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const parts = [];
+    if(s.jumps>0){
+      parts.push(`${s.jumps} jump${s.jumps===1?'':'s'}, best ${s.bestJump.toFixed(2)}s`);
+      const details = (s.jumpDetails||[]).filter(j=>j.heightCm!=null);
+      if(details.length){
+        const avgHeight = details.reduce((sum,j)=>sum+j.heightCm,0)/details.length;
+        parts.push(`avg est. height ${avgHeight.toFixed(0)}cm`);
+      }
+      const splits = (s.jumpDetails||[]).filter(j=>j.splitDeg!=null);
+      if(splits.length){
+        const widest = Math.max(...splits.map(j=>j.splitDeg));
+        parts.push(`widest split ${widest.toFixed(0)}°`);
+      }
+    }
+    if(s.mode==='rhythm' && s.totalBeats>0) parts.push(`${s.onBeat}/${s.totalBeats} beats on time`);
+    if(!parts.length) parts.push('Free practice');
+    const shots = (s.jumpDetails||[]).filter(j=>j.snapshot);
+    const thumbs = shots.length ? `<div class="pl-thumbs">${shots.map((j,i)=>
+      `<img src="${j.snapshot}" alt="Peak of jump" data-session="${s.at}" data-shot="${i}"
+        title="${j.heightCm!=null?j.heightCm.toFixed(0)+'cm · ':''}${j.splitDeg!=null?j.splitDeg.toFixed(0)+'°':''}">`
+    ).join('')}</div>` : '';
+    const watchBtn = s.hasVideo ? `<button class="btn secondary small pl-watch-btn" data-session="${s.at}" style="margin-top:8px">▶ Watch Video</button>` : '';
+    return `<div class="practice-log-item"><div style="width:100%"><div class="pl-stats">${escapeHtml(parts.join(' · '))}</div>
+      <div class="pl-date">${when} · ${s.duration}s</div>${thumbs}${watchBtn}</div></div>`;
+  }).join('');
+
+  list.querySelectorAll('.pl-thumbs img').forEach(img => {
+    img.addEventListener('click', () => {
+      openModal(`<button class="close-x" onclick="closeModal()">✕</button><h2>Peak of Jump</h2>
+        <img class="full" src="${img.src}" alt="Peak of jump">`);
+    });
+  });
+  list.querySelectorAll('.pl-watch-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sessionId = Number(btn.dataset.session);
+      btn.textContent = 'Loading…';
+      const url = await window.getPracticeVideoUrl(sessionId);
+      btn.textContent = '▶ Watch Video';
+      if(!url){ notify("Sorry, that video couldn't be found — it may have been cleared from this device."); return; }
+      openModal(`<button class="close-x" onclick="closeModal()">✕</button><h2>Practice Session</h2>
+        <video controls autoplay style="width:100%;border-radius:12px;background:#000" src="${url}"></video>`);
+    });
+  });
+}
+
+/* ---------- music practice ---------- */
+let musicDbPromise = null;
+function openMusicDb(){
+  if(musicDbPromise) return musicDbPromise;
+  musicDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open('dancePracticeMusicTrack', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains('track')) db.createObjectStore('track', { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return musicDbPromise;
+}
+async function saveMusicTrack(name, blob){
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('track', 'readwrite');
+    tx.objectStore('track').put({ id: 'current', name, blob });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadMusicTrack(){
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('track', 'readonly');
+    const req = tx.objectStore('track').get('current');
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+const musicAudio = document.getElementById('musicAudio');
+let musicLoopStart = null, musicLoopEnd = null, musicLoopOn = false;
+let musicTapTimes = [];
+let musicBeatSeconds = null;
+let musicAnchorAudioTime = null;
+let musicCountRaf = null;
+
+function fmtMusicTime(sec){
+  if(!isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function openTrackInPlayer(name, blob){
+  const url = URL.createObjectURL(blob);
+  musicAudio.src = url;
+  document.getElementById('musicTrackName').textContent = name;
+  document.getElementById('musicEmptyState').style.display = 'none';
+  document.getElementById('musicPlayerArea').style.display = '';
+  musicLoopStart = null; musicLoopEnd = null; musicLoopOn = false;
+  document.getElementById('musicLoopLabel').textContent = 'No section set yet';
+  document.getElementById('musicLoopToggleBtn').textContent = '🔁 Loop Off';
+  resetMusicTaps();
+}
+
+document.getElementById('musicChooseBtn').addEventListener('click', () => document.getElementById('musicFileInput').click());
+document.getElementById('musicChangeBtn').addEventListener('click', () => document.getElementById('musicFileInput').click());
+document.getElementById('musicFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  await saveMusicTrack(file.name, file);
+  openTrackInPlayer(file.name, file);
+  e.target.value = '';
+});
+
+musicAudio.addEventListener('loadedmetadata', () => {
+  document.getElementById('musicSeekBar').max = musicAudio.duration;
+  document.getElementById('musicDuration').textContent = fmtMusicTime(musicAudio.duration);
+});
+musicAudio.addEventListener('timeupdate', () => {
+  document.getElementById('musicSeekBar').value = musicAudio.currentTime;
+  document.getElementById('musicCurrentTime').textContent = fmtMusicTime(musicAudio.currentTime);
+  if(musicLoopOn && musicLoopEnd != null && musicAudio.currentTime >= musicLoopEnd){
+    musicAudio.currentTime = musicLoopStart || 0;
+  }
+});
+musicAudio.addEventListener('ended', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; });
+musicAudio.addEventListener('play', () => { document.getElementById('musicPlayBtn').textContent = '⏸ Pause'; startMusicCountLoop(); });
+musicAudio.addEventListener('pause', () => { document.getElementById('musicPlayBtn').textContent = '▶ Play'; });
+
+document.getElementById('musicSeekBar').addEventListener('input', (e) => { musicAudio.currentTime = Number(e.target.value); });
+document.getElementById('musicPlayBtn').addEventListener('click', () => {
+  if(musicAudio.paused) musicAudio.play(); else musicAudio.pause();
+});
+
+document.getElementById('musicSpeedSlider').addEventListener('input', (e) => {
+  const pct = Number(e.target.value);
+  musicAudio.playbackRate = pct / 100;
+  musicAudio.preservesPitch = true;
+  musicAudio.mozPreservesPitch = true;
+  musicAudio.webkitPreservesPitch = true;
+  document.getElementById('musicSpeedLabel').textContent = pct + '%';
+});
+
+document.getElementById('musicLoopStartBtn').addEventListener('click', () => {
+  musicLoopStart = musicAudio.currentTime;
+  updateMusicLoopLabel();
+});
+document.getElementById('musicLoopEndBtn').addEventListener('click', () => {
+  musicLoopEnd = musicAudio.currentTime;
+  updateMusicLoopLabel();
+});
+function updateMusicLoopLabel(){
+  const label = document.getElementById('musicLoopLabel');
+  if(musicLoopStart != null && musicLoopEnd != null){
+    label.textContent = `Section: ${fmtMusicTime(musicLoopStart)} – ${fmtMusicTime(musicLoopEnd)}`;
+  } else if(musicLoopStart != null){
+    label.textContent = `Start set at ${fmtMusicTime(musicLoopStart)} — now set an end point`;
+  } else {
+    label.textContent = 'No section set yet';
+  }
+}
+document.getElementById('musicLoopToggleBtn').addEventListener('click', (e) => {
+  if(musicLoopStart == null || musicLoopEnd == null){ notify('Set a start and end point first.'); return; }
+  musicLoopOn = !musicLoopOn;
+  e.target.textContent = musicLoopOn ? '🔁 Loop On' : '🔁 Loop Off';
+});
+
+function resetMusicTaps(){
+  musicTapTimes = [];
+  musicBeatSeconds = null;
+  musicAnchorAudioTime = null;
+  document.getElementById('musicCountDisplay').style.display = 'none';
+  document.getElementById('musicTapStatus').textContent = 'Tap along with the music, on every count, at least 4 times to set the tempo.';
+}
+document.getElementById('musicTapResetBtn').addEventListener('click', resetMusicTaps);
+document.getElementById('musicTapBtn').addEventListener('click', () => {
+  const now = musicAudio.currentTime;
+  musicTapTimes.push(now);
+  if(musicTapTimes.length > 8) musicTapTimes.shift();
+  if(musicTapTimes.length >= 4){
+    const intervals = [];
+    for(let i = 1; i < musicTapTimes.length; i++) intervals.push(musicTapTimes[i] - musicTapTimes[i-1]);
+    const avg = intervals.reduce((a,b)=>a+b, 0) / intervals.length;
+    if(avg > 0.15 && avg < 3){
+      musicBeatSeconds = avg;
+      musicAnchorAudioTime = now;
+      const bpmEstimate = Math.round(60 / avg);
+      document.getElementById('musicTapStatus').textContent = `Tempo set (~${bpmEstimate} BPM). Keep tapping to refine it, or let the count run.`;
+      document.getElementById('musicCountDisplay').style.display = '';
+    }
+  } else {
+    document.getElementById('musicTapStatus').textContent = `${musicTapTimes.length}/4 taps registered — keep tapping on the beat.`;
+  }
+});
+
+function startMusicCountLoop(){
+  if(musicCountRaf) cancelAnimationFrame(musicCountRaf);
+  function step(){
+    if(musicAudio.paused || musicAudio.ended){ musicCountRaf = null; return; }
+    if(musicBeatSeconds != null && musicAnchorAudioTime != null){
+      const beatsElapsed = (musicAudio.currentTime - musicAnchorAudioTime) / musicBeatSeconds;
+      const count = (((Math.floor(beatsElapsed) % 8) + 8) % 8) + 1;
+      const display = document.getElementById('musicCountDisplay');
+      display.textContent = count;
+      display.classList.toggle('beat-one', count === 1);
+    }
+    musicCountRaf = requestAnimationFrame(step);
+  }
+  step();
+}
+
+loadMusicTrack().then(track => { if(track) openTrackInPlayer(track.name, track.blob); }).catch(()=>{});
+
+/* ---------- init ---------- */
+renderPracticeLog();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js", { scope: "/dance-practice-companion/" }).catch(() => {});
+}
+</script>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+// ---- IndexedDB storage for practice session videos (too large for localStorage) ----
+let practiceVideoDbPromise = null;
+function openPracticeVideoDb(){
+  if(practiceVideoDbPromise) return practiceVideoDbPromise;
+  practiceVideoDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open('dancePracticeVideos', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains('videos')) db.createObjectStore('videos', { keyPath: 'sessionId' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return practiceVideoDbPromise;
+}
+async function savePracticeVideoBlob(sessionId, blob){
+  const db = await openPracticeVideoDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').put({ sessionId, blob });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+window.getPracticeVideoUrl = async function(sessionId){
+  const db = await openPracticeVideoDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('videos', 'readonly');
+    const req = tx.objectStore('videos').get(sessionId);
+    req.onsuccess = () => resolve(req.result ? URL.createObjectURL(req.result.blob) : null);
+    req.onerror = () => reject(req.error);
+  });
+};
+window.deletePracticeVideoBlob = async function(sessionId){
+  const db = await openPracticeVideoDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').delete(sessionId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+};
+window.clearAllPracticeVideos = async function(){
+  const db = await openPracticeVideoDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+};
+
+const video = document.getElementById('practiceVideo');
+const canvas = document.getElementById('practiceCanvas');
+const ctx = canvas.getContext('2d');
+const placeholder = document.getElementById('practicePlaceholder');
+const recordCanvas = document.getElementById('practiceRecordCanvas');
+const recordCtx = recordCanvas.getContext('2d');
+
+let poseLandmarker = null;
+let stream = null;
+let rafId = null;
+let mode = 'free';
+let sessionStart = null;
+
+// recording state
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordedVideoUrl = null;
+let lastRecordedBlob = null;
+
+// repetition mode state
+let repsTarget = 10;
+
+// jump detection state
+let hipBaseline = null;
+let airborne = false;
+let airborneStart = 0;
+let jumpCount = 0;
+let bestJump = 0;
+let groundedWorldHipY = null;
+let peakWorldHipY = null;
+let peakWorld = null;
+let jumpDetails = [];
+let peakSnapshotCanvas = null;
+let peakSnapshotDataUrl = null;
+
+// rhythm state
+let metronomeTimer = null;
+let bpm = 100;
+let beatTimestamps = [];
+let onBeatCount = 0;
+let totalBeatCount = 0;
+let prevWristPos = null;
+let prevWristT = null;
+let recentWristSpeeds = [];
+let audioCtx = null;
+let countStyle = 'none';
+let currentBeatInGroup = 0;
+
+window.setCountStyle = function(style){
+  countStyle = style;
+  currentBeatInGroup = 0;
+  const display = document.getElementById('countDisplay');
+  display.style.display = style === 'none' ? 'none' : '';
+};
+
+function beep(accent){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.frequency.value = accent ? 1320 : 880;
+  gain.gain.setValueAtTime(accent ? 0.22 : 0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.13);
+}
+
+async function ensurePoseLandmarker(){
+  if(poseLandmarker) return poseLandmarker;
+  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate: "GPU"
+    },
+    runningMode: "VIDEO",
+    numPoses: 1
+  });
+  return poseLandmarker;
+}
+
+function sizePracticeStage(){
+  const stage = document.getElementById('practiceStage');
+  const card = stage && stage.closest('.card');
+  if(!stage || !card) return;
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const stageTop = stage.getBoundingClientRect().top;
+
+  const prevHeight = stage.style.height, prevAspect = stage.style.aspectRatio;
+  stage.style.height = '10px'; stage.style.aspectRatio = 'auto';
+  const belowHeight = card.scrollHeight - 10;
+  stage.style.height = prevHeight; stage.style.aspectRatio = prevAspect;
+
+  // Fill the rest of the visible viewport below the stage's own top, leaving room
+  // for the controls below it (mode row, live stats, end button etc.) so nothing
+  // is pushed off-screen — no fixed footer to dodge, so the page simply scrolls
+  // if a small phone can't fit everything at once.
+  const available = viewportHeight - stageTop - belowHeight - 24;
+  stage.style.height = Math.max(320, available) + 'px';
+  stage.style.aspectRatio = 'auto';
+}
+window.addEventListener('resize', () => { if(stream) sizePracticeStage(); });
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => { if(stream) sizePracticeStage(); });
+}
+
+function pickRecorderMime(){
+  const candidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  return candidates.find(m => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
+}
+
+function startRecording(){
+  recordCanvas.width = video.videoWidth;
+  recordCanvas.height = video.videoHeight;
+  recordedChunks = [];
+  const recordStream = recordCanvas.captureStream(30);
+  const mimeType = pickRecorderMime();
+  try{
+    mediaRecorder = new MediaRecorder(recordStream, mimeType ? { mimeType } : undefined);
+  }catch(err){ mediaRecorder = null; return; }
+  mediaRecorder.ondataavailable = e => { if(e.data && e.data.size>0) recordedChunks.push(e.data); };
+  mediaRecorder.start(500);
+}
+
+function stopRecordingAndBuildReview(){
+  return new Promise(resolve => {
+    if(!mediaRecorder || mediaRecorder.state==='inactive'){ resolve(null); return; }
+    mediaRecorder.onstop = () => {
+      if(!recordedChunks.length){ resolve(null); return; }
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      lastRecordedBlob = blob;
+      if(recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+      recordedVideoUrl = URL.createObjectURL(blob);
+      resolve(recordedVideoUrl);
+    };
+    mediaRecorder.stop();
+  });
+}
+
+window.startPracticeCamera = async function(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+  }catch(err){
+    notify("Couldn't access your camera — check that this site has camera permission.");
+    return;
+  }
+  video.srcObject = stream;
+  await new Promise(resolve => { video.onloadedmetadata = resolve; });
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  placeholder.style.display = 'none';
+
+  document.getElementById('practiceReviewCard').style.display = 'none';
+  document.getElementById('practiceStartBtn').style.display = 'none';
+  document.getElementById('practiceStopBtn').style.display = '';
+  document.getElementById('practiceModeRow').style.display = '';
+  document.getElementById('practiceLiveStats').style.display = '';
+  document.getElementById('practiceEndBtn').style.display = '';
+
+  sessionStart = Date.now();
+  jumpCount = 0; bestJump = 0; hipBaseline = null; airborne = false;
+  groundedWorldHipY = null; peakWorldHipY = null; peakWorld = null; jumpDetails = []; peakSnapshotDataUrl = null;
+  onBeatCount = 0; totalBeatCount = 0; beatTimestamps = []; recentWristSpeeds = [];
+  updateLiveStats();
+  updateRefNote();
+  sizePracticeStage();
+  setTimeout(() => { if(stream) sizePracticeStage(); }, 350);
+
+  startRecording();
+
+  placeholder.textContent = 'Loading pose model…';
+  placeholder.style.display = '';
+  await ensurePoseLandmarker();
+  placeholder.style.display = 'none';
+
+  detectLoop();
+};
+
+window.stopPracticeCamera = function(){
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  if(mediaRecorder && mediaRecorder.state!=='inactive'){ mediaRecorder.stop(); }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
+  if(metronomeTimer){ clearInterval(metronomeTimer); metronomeTimer = null; }
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const stage = document.getElementById('practiceStage');
+  stage.style.height = ''; stage.style.aspectRatio = '';
+  placeholder.textContent = 'Tap "Start Camera" below to begin';
+  placeholder.style.display = '';
+  document.getElementById('practiceStartBtn').style.display = '';
+  document.getElementById('practiceStopBtn').style.display = 'none';
+  document.getElementById('practiceModeRow').style.display = 'none';
+  document.getElementById('bpmRow').style.display = 'none';
+  document.getElementById('repsRow').style.display = 'none';
+  document.getElementById('practiceLiveStats').style.display = 'none';
+  document.getElementById('practiceRefNote').style.display = 'none';
+  document.getElementById('practiceEndBtn').style.display = 'none';
+};
+
+window.setPracticeMode = function(m){
+  mode = m;
+  document.querySelectorAll('#practiceModeRow .tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+  document.getElementById('bpmRow').style.display = m==='rhythm' ? 'flex' : 'none';
+  document.getElementById('eightCountRow').style.display = m==='rhythm' ? 'flex' : 'none';
+  document.getElementById('rhythmStatsBlock').style.display = m==='rhythm' ? '' : 'none';
+  document.getElementById('repsRow').style.display = m==='reps' ? 'flex' : 'none';
+  document.getElementById('repsStatsBlock').style.display = m==='reps' ? '' : 'none';
+  if(m!=='rhythm'){
+    document.getElementById('countDisplay').style.display = 'none';
+    if(metronomeTimer){ clearInterval(metronomeTimer); metronomeTimer=null; document.getElementById('metronomeToggleBtn').textContent='▶ Start Beat'; }
+  } else {
+    document.getElementById('countDisplay').style.display = countStyle === 'none' ? 'none' : '';
+  }
+  updateRefNote();
+  if(stream) sizePracticeStage();
+};
+
+window.updateBpmLabel = function(){
+  bpm = Number(document.getElementById('bpmSlider').value);
+  document.getElementById('bpmLabel').textContent = bpm + ' BPM';
+  if(metronomeTimer){ clearInterval(metronomeTimer); startMetronomeInterval(); }
+};
+
+window.updateRepsLabel = function(){
+  repsTarget = Number(document.getElementById('repsTargetSlider').value);
+  document.getElementById('repsTargetLabel').textContent = repsTarget + ' jumps';
+  updateLiveStats();
+};
+
+// Real published reference range for jump height in trained ballet dancers performing grand jeté
+// (leap height 0.33-0.41m / 33-41cm), from: Weigand & Mokha, "Effects of Five Common Preparatory
+// Approaches on Grand Jeté Biomechanics", Journal of Dance Medicine & Science, 2024.
+const REFERENCE_JUMP_HEIGHT_CM = { low: 33, high: 41 };
+function updateRefNote(){
+  const note = document.getElementById('practiceRefNote');
+  if(mode==='free' || mode==='reps'){
+    note.style.display = '';
+    note.textContent = `📚 Published research on trained dancers' grand jeté found leap heights of ${REFERENCE_JUMP_HEIGHT_CM.low}–${REFERENCE_JUMP_HEIGHT_CM.high}cm (Weigand & Mokha, 2024) — a reference point, not a target.`;
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+function startMetronomeInterval(){
+  const intervalMs = 60000 / bpm;
+  currentBeatInGroup = 0;
+  metronomeTimer = setInterval(()=>{
+    const groupSize = countStyle === '3' ? 3 : countStyle === '4' ? 4 : countStyle === '8' ? 8 : 0;
+    let isAccent = false;
+    if(groupSize){
+      currentBeatInGroup = (currentBeatInGroup % groupSize) + 1;
+      isAccent = currentBeatInGroup === 1;
+      const display = document.getElementById('countDisplay');
+      display.textContent = currentBeatInGroup;
+      display.classList.toggle('beat-one', isAccent);
+    }
+    beep(isAccent);
+    beatTimestamps.push(performance.now());
+    totalBeatCount++;
+    updateLiveStats();
+  }, intervalMs);
+}
+
+window.toggleMetronome = function(){
+  if(metronomeTimer){
+    clearInterval(metronomeTimer); metronomeTimer = null;
+    document.getElementById('metronomeToggleBtn').textContent = '▶ Start Beat';
+  } else {
+    startMetronomeInterval();
+    document.getElementById('metronomeToggleBtn').textContent = '■ Stop Beat';
+  }
+};
+
+function updateLiveStats(){
+  document.getElementById('statJumps').textContent = jumpCount;
+  document.getElementById('statBestJump').textContent = bestJump.toFixed(2) + 's';
+  document.getElementById('statOnBeat').textContent = onBeatCount + '/' + totalBeatCount;
+  document.getElementById('statRepsProgress').textContent = jumpCount + '/' + repsTarget;
+}
+
+function capturePeakSnapshot(){
+  if(!video.videoWidth) return null;
+  if(!peakSnapshotCanvas){ peakSnapshotCanvas = document.createElement('canvas'); }
+  const targetW = 320;
+  const targetH = Math.round(targetW * (video.videoHeight / video.videoWidth));
+  peakSnapshotCanvas.width = targetW;
+  peakSnapshotCanvas.height = targetH;
+  const pctx = peakSnapshotCanvas.getContext('2d');
+  pctx.save(); pctx.translate(targetW, 0); pctx.scale(-1, 1);
+  pctx.drawImage(video, 0, 0, targetW, targetH);
+  pctx.drawImage(canvas, 0, 0, targetW, targetH);
+  pctx.restore();
+  return peakSnapshotCanvas.toDataURL('image/jpeg', 0.75);
+}
+
+function angleBetween(a,b,c){
+  const ab = { x:a.x-b.x, y:a.y-b.y };
+  const cb = { x:c.x-b.x, y:c.y-b.y };
+  const dot = ab.x*cb.x + ab.y*cb.y;
+  const magA = Math.hypot(ab.x,ab.y), magC = Math.hypot(cb.x,cb.y);
+  if(magA===0 || magC===0) return 0;
+  const cos = Math.min(1, Math.max(-1, dot/(magA*magC)));
+  return Math.acos(cos) * 180/Math.PI;
+}
+
+function worldHipY(world){
+  const lHip = world[23], rHip = world[24];
+  if(!lHip || !rHip) return null;
+  return (lHip.y + rHip.y) / 2;
+}
+
+function legSplitAngleDeg(world){
+  const lHip=world[23], rHip=world[24], lAnkle=world[27], rAnkle=world[28];
+  if(!lHip||!rHip||!lAnkle||!rAnkle) return null;
+  const leftLeg = { x:lAnkle.x-lHip.x, y:lAnkle.y-lHip.y, z:lAnkle.z-lHip.z };
+  const rightLeg = { x:rAnkle.x-rHip.x, y:rAnkle.y-rHip.y, z:rAnkle.z-rHip.z };
+  const dot = leftLeg.x*rightLeg.x + leftLeg.y*rightLeg.y + leftLeg.z*rightLeg.z;
+  const magL = Math.hypot(leftLeg.x,leftLeg.y,leftLeg.z), magR = Math.hypot(rightLeg.x,rightLeg.y,rightLeg.z);
+  if(magL===0||magR===0) return null;
+  const cos = Math.min(1, Math.max(-1, dot/(magL*magR)));
+  return Math.acos(cos) * 180/Math.PI;
+}
+
+function processJumpDetection(landmarks, world, now){
+  const lHip = landmarks[23], rHip = landmarks[24];
+  if(!lHip || !rHip) return;
+  const hipY = (lHip.y + rHip.y) / 2;
+
+  if(hipBaseline===null){ hipBaseline = hipY; return; }
+  if(!airborne) hipBaseline = hipBaseline*0.95 + hipY*0.05;
+
+  const liftThreshold = 0.05;
+  if(!airborne && (hipBaseline - hipY) > liftThreshold){
+    airborne = true;
+    airborneStart = now;
+    groundedWorldHipY = worldHipY(world);
+    peakWorldHipY = groundedWorldHipY;
+    peakWorld = world;
+    peakSnapshotDataUrl = capturePeakSnapshot();
+  } else if(airborne){
+    const wy = worldHipY(world);
+    if(wy!==null && groundedWorldHipY!==null && (wy - groundedWorldHipY) > (peakWorldHipY - groundedWorldHipY)){
+      peakWorldHipY = wy;
+      peakWorld = world;
+      peakSnapshotDataUrl = capturePeakSnapshot();
+    }
+    if((hipBaseline - hipY) < liftThreshold*0.4){
+      airborne = false;
+      const durationSec = (now - airborneStart) / 1000;
+      if(durationSec > 0.15 && durationSec < 3){
+        jumpCount++;
+        if(durationSec > bestJump) bestJump = durationSec;
+        let heightCm = null, splitDeg = null;
+        if(groundedWorldHipY!==null && peakWorldHipY!==null){
+          heightCm = Math.abs(peakWorldHipY - groundedWorldHipY) * 100;
+        }
+        if(peakWorld) splitDeg = legSplitAngleDeg(peakWorld);
+        jumpDetails.push({ duration: durationSec, heightCm, splitDeg, snapshot: peakSnapshotDataUrl });
+        updateLiveStats();
+        if(mode==='reps' && jumpCount>=repsTarget){
+          notify(`Nice work — you hit your target of ${repsTarget} jumps! 🎉`);
+          window.endPracticeSession();
+        }
+      }
+    }
+  }
+}
+
+function processRhythmDetection(landmarks, now){
+  if(mode!=='rhythm' || !metronomeTimer) return;
+  const rWrist = landmarks[16], lWrist = landmarks[15];
+  if(!rWrist || !lWrist) return;
+  const wristPos = { x:(rWrist.x+lWrist.x)/2, y:(rWrist.y+lWrist.y)/2 };
+  if(prevWristPos && prevWristT){
+    const dt = (now - prevWristT) / 1000;
+    if(dt>0){
+      const speed = Math.hypot(wristPos.x-prevWristPos.x, wristPos.y-prevWristPos.y) / dt;
+      recentWristSpeeds.push({ t: now, speed });
+      if(recentWristSpeeds.length > 60) recentWristSpeeds.shift();
+    }
+  }
+  prevWristPos = wristPos; prevWristT = now;
+
+  while(beatTimestamps.length && now - beatTimestamps[0] > 220){
+    const beatT = beatTimestamps.shift();
+    const hit = recentWristSpeeds.some(s => Math.abs(s.t-beatT)<220 && s.speed>0.35);
+    if(hit) onBeatCount++;
+    updateLiveStats();
+  }
+}
+
+function detectLoop(){
+  if(!poseLandmarker || video.paused || video.ended){ rafId = requestAnimationFrame(detectLoop); return; }
+  const now = performance.now();
+  const results = poseLandmarker.detectForVideo(video, now);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(results.landmarks && results.landmarks[0]){
+    const landmarks = results.landmarks[0];
+    const world = results.worldLandmarks && results.worldLandmarks[0];
+    const drawingUtils = new DrawingUtils(ctx);
+    drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#f485bc', lineWidth: 3 });
+    drawingUtils.drawLandmarks(landmarks, { color: '#a98fe0', radius: 3 });
+
+    if(world) processJumpDetection(landmarks, world, now);
+    processRhythmDetection(landmarks, now);
+  }
+
+  if(mediaRecorder && mediaRecorder.state==='recording'){
+    recordCtx.save(); recordCtx.translate(recordCanvas.width, 0); recordCtx.scale(-1, 1);
+    recordCtx.drawImage(video, 0, 0, recordCanvas.width, recordCanvas.height);
+    recordCtx.drawImage(canvas, 0, 0, recordCanvas.width, recordCanvas.height);
+    recordCtx.restore();
+  }
+
+  rafId = requestAnimationFrame(detectLoop);
+}
+
+let sessionEnding = false;
+window.endPracticeSession = async function(){
+  if(sessionEnding) return;
+  sessionEnding = true;
+  const sessionId = Date.now();
+  const duration = Math.round((Date.now() - sessionStart) / 1000);
+  const session = {
+    at: sessionId,
+    mode,
+    duration,
+    jumps: jumpCount,
+    bestJump,
+    jumpDetails: jumpDetails.slice(),
+    onBeat: onBeatCount,
+    totalBeats: totalBeatCount,
+    hasVideo: false
+  };
+  const videoUrl = await stopRecordingAndBuildReview();
+  if(videoUrl && lastRecordedBlob){
+    try{ await savePracticeVideoBlob(sessionId, lastRecordedBlob); session.hasVideo = true; }
+    catch(err){ /* storage full or unsupported - session stats still save fine without the video */ }
+  }
+  window.stopPracticeCamera();
+  window.commitPracticeSession(session);
+  if(videoUrl){
+    document.getElementById('practiceReviewVideo').src = videoUrl;
+    document.getElementById('practiceReviewCard').style.display = '';
+  }
+  sessionEnding = false;
+};
+
+window.savePracticeVideo = function(){
+  if(!recordedVideoUrl) return;
+  const a = document.createElement('a');
+  a.href = recordedVideoUrl;
+  a.download = 'dance-practice-' + fmtDate(new Date()) + '.webm';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
+
+window.discardPracticeVideo = function(){
+  document.getElementById('practiceReviewCard').style.display = 'none';
+  if(recordedVideoUrl){ URL.revokeObjectURL(recordedVideoUrl); recordedVideoUrl = null; }
+};
+</script>
+</body>
+</html>
