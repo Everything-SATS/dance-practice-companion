@@ -385,9 +385,9 @@ footer{
   <section id="tab-music" class="tab-panel">
     <div class="card">
       <h2>🎵 Music Practice</h2>
-      <p class="practice-intro">Upload a track — or a video, such as one saved from WhatsApp — to practice to.
-        If you choose a video, the app pulls just the music out of it and saves that as your track. Slow it down or
-        speed it up without changing the pitch, loop any section on repeat, and tap along to set a live count overlay.
+      <p class="practice-intro">Upload a track — or a video, such as one saved from WhatsApp or your camera roll — to
+        practice to. A video's sound plays just like a track, no conversion needed. Slow it down or speed it up
+        without changing the pitch, loop any section on repeat, and tap along to set a live count overlay.
         Everything happens on this device — nothing is ever uploaded anywhere.</p>
 
       <input type="file" id="musicFileInput" accept="audio/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">
@@ -396,7 +396,6 @@ footer{
         <button class="btn" id="musicChooseBtn">➕ Add an Audio File</button>
         <button class="btn secondary" id="musicChooseVideoBtn">🎬 Add from Video/Photos</button>
       </div>
-      <div id="musicExtractStatus" style="text-align:center;margin-top:10px;display:none;font-size:.78rem;color:var(--ink-soft)"></div>
 
       <h3 style="margin-top:18px">Your Tracks</h3>
       <div id="musicTrackList"><p class="empty-note">No tracks saved yet — add one above.</p></div>
@@ -698,72 +697,6 @@ function fmtMusicTime(sec){
   return m + ':' + String(s).padStart(2, '0');
 }
 
-// The sample-by-sample WAV encode below is real CPU work (millions of iterations for a
-// multi-minute track) - running it on the main thread would freeze the UI while it's mid-encode,
-// so it's offloaded to a Web Worker (built from an inline Blob, no extra file needed) and only
-// the async decodeAudioData + a fast native slice() copy happen on the main thread.
-const wavWorkerSource = `
-self.onmessage = function(e){
-  const { channelData, sampleRate, numChannels, numFrames } = e.data;
-  const bytesPerSample = 2;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = numFrames * blockAlign;
-  const arrBuf = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(arrBuf);
-  function writeString(offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
-  writeString(0,'RIFF'); view.setUint32(4,36+dataSize,true); writeString(8,'WAVE');
-  writeString(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
-  view.setUint16(22,numChannels,true); view.setUint32(24,sampleRate,true);
-  view.setUint32(28,sampleRate*blockAlign,true); view.setUint16(32,blockAlign,true);
-  view.setUint16(34,bytesPerSample*8,true);
-  writeString(36,'data'); view.setUint32(40,dataSize,true);
-  let offset = 44;
-  for(let i=0;i<numFrames;i++){
-    for(let ch=0;ch<numChannels;ch++){
-      let sample = Math.max(-1, Math.min(1, channelData[ch][i]));
-      sample = sample < 0 ? sample*0x8000 : sample*0x7FFF;
-      view.setInt16(offset, sample, true);
-      offset += 2;
-    }
-  }
-  self.postMessage({ buffer: arrBuf }, [arrBuf]);
-};
-`;
-let wavWorker = null;
-function getWavWorker(){
-  if(!wavWorker){
-    const blob = new Blob([wavWorkerSource], { type: 'application/javascript' });
-    wavWorker = new Worker(URL.createObjectURL(blob));
-  }
-  return wavWorker;
-}
-
-function audioBufferToWavBlobAsync(buffer){
-  const numChannels = buffer.numberOfChannels;
-  const channelData = [];
-  for(let ch = 0; ch < numChannels; ch++) channelData.push(buffer.getChannelData(ch).slice());
-  return new Promise((resolve, reject) => {
-    const worker = getWavWorker();
-    worker.onmessage = (e) => resolve(new Blob([e.data.buffer], { type: 'audio/wav' }));
-    worker.onerror = (err) => reject(err);
-    worker.postMessage(
-      { channelData, sampleRate: buffer.sampleRate, numChannels, numFrames: buffer.length },
-      channelData.map(cd => cd.buffer)
-    );
-  });
-}
-
-async function extractAudioFromVideoFile(file){
-  const arrayBuffer = await file.arrayBuffer();
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  try{
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    return await audioBufferToWavBlobAsync(audioBuffer);
-  } finally {
-    ctx.close();
-  }
-}
-
 function openTrackInPlayer(id, name, blob){
   if(currentMusicObjectUrl) URL.revokeObjectURL(currentMusicObjectUrl);
   currentMusicObjectUrl = URL.createObjectURL(blob);
@@ -908,26 +841,14 @@ document.getElementById('musicVideoFileInput').addEventListener('change', handle
 async function handleMusicFileChosen(e){
   const file = e.target.files[0];
   if(!file) return;
-  const statusEl = document.getElementById('musicExtractStatus');
+  // A video file is stored and played exactly like an audio file - the <audio> element just plays
+  // its sound track directly, no decoding/conversion needed. This used to try to decode + re-encode
+  // the audio out of the video first, which was fragile (silently hung on some iOS/Safari versions
+  // for certain video codecs) and was pure unnecessary risk for no real benefit.
   const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|3gp|3gpp|webm|mkv|avi)$/i.test(file.name);
-
-  if(isVideo){
-    statusEl.style.display = '';
-    statusEl.textContent = '🎬 Pulling the music out of your video…';
-    try{
-      const wavBlob = await extractAudioFromVideoFile(file);
-      const trackName = file.name.replace(/\.[^.]+$/, '') + ' (audio)';
-      const id = await addMusicTrack(trackName, wavBlob);
-      openTrackInPlayer(id, trackName, wavBlob);
-      statusEl.style.display = 'none';
-    }catch(err){
-      statusEl.textContent = "Couldn't pull the audio out of that video in this browser — this works best in Chrome. You could also try saving the video from WhatsApp with a different codec, or share it as a voice note instead.";
-    }
-  } else {
-    const id = await addMusicTrack(file.name, file);
-    openTrackInPlayer(id, file.name, file);
-    statusEl.style.display = 'none';
-  }
+  const trackName = isVideo ? file.name.replace(/\.[^.]+$/, '') + ' (from video)' : file.name;
+  const id = await addMusicTrack(trackName, file);
+  openTrackInPlayer(id, trackName, file);
   e.target.value = '';
 }
 
