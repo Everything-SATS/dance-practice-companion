@@ -264,6 +264,11 @@ footer{
         </div>
       </div>
 
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85rem;font-weight:700;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="showSkeletonToggle" checked style="width:18px;height:18px;accent-color:var(--purple)">
+        Show skeleton overlay <span style="font-weight:500;color:var(--ink-soft)">(turn off for group/troupe practice)</span>
+      </label>
+
       <div class="practice-controls">
         <button class="btn" id="practiceStartBtn" onclick="startPracticeCamera()">▶ Start Camera</button>
         <button class="btn danger" id="practiceStopBtn" onclick="confirmStopCamera()" style="display:none">■ Stop Camera</button>
@@ -1144,6 +1149,17 @@ const placeholder = document.getElementById('practicePlaceholder');
 const recordCanvas = document.getElementById('practiceRecordCanvas');
 const recordCtx = recordCanvas.getContext('2d');
 
+// Detection/tracking always runs regardless of this setting - it only hides the drawn skeleton
+// (in both the live view and the saved recording), for group/troupe practice where a screen full
+// of overlapping stickmen would be more distracting than useful.
+let showSkeleton = localStorage.getItem('dancePractice_showSkeleton') !== 'off';
+const showSkeletonToggle = document.getElementById('showSkeletonToggle');
+showSkeletonToggle.checked = showSkeleton;
+showSkeletonToggle.addEventListener('change', () => {
+  showSkeleton = showSkeletonToggle.checked;
+  localStorage.setItem('dancePractice_showSkeleton', showSkeleton ? 'on' : 'off');
+});
+
 let poseLandmarker = null;
 let stream = null;
 let rafId = null;
@@ -1616,9 +1632,11 @@ function detectLoop(){
     if(results.landmarks && results.landmarks[0]){
       const landmarks = results.landmarks[0];
       const world = results.worldLandmarks && results.worldLandmarks[0];
-      const drawingUtils = new DrawingUtils(ctx);
-      drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#f485bc', lineWidth: 3 });
-      drawingUtils.drawLandmarks(landmarks, { color: '#a98fe0', radius: 3 });
+      if(showSkeleton){
+        const drawingUtils = new DrawingUtils(ctx);
+        drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#f485bc', lineWidth: 3 });
+        drawingUtils.drawLandmarks(landmarks, { color: '#a98fe0', radius: 3 });
+      }
 
       if(world) processJumpDetection(landmarks, world, now);
       processRhythmDetection(landmarks, now);
