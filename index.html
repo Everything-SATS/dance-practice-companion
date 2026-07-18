@@ -600,7 +600,7 @@ function renderPracticeLog(){
         ${syncHtml}`);
       if(s && s.youtubeVideoId){
         document.getElementById('modalYoutubeSyncBtn').onclick = () => {
-          window.startYoutubeSyncPlayback(s.youtubeVideoId, 'modalReviewVideo', s.at, s.youtubeAudioOffset,
+          window.startYoutubeSyncPlayback(s.youtubeVideoId, 'modalReviewVideo', s.at, null,
             'modalYoutubeCalibrateRow', 'modalYoutubeCalibrateNote', 'modalYoutubeMarkBtn');
         };
       }
@@ -1120,16 +1120,30 @@ function ensureYoutubePlayerLoaded(videoId, onReady){
   }
 }
 
-window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, savedOffset,
+// Remembers the "song actually starts here" point per YouTube video (not per session), so once
+// you've marked it once, every future session using that same link skips straight past the ad -
+// this is a live seek within the official embed, not a saved/edited copy of anything.
+function getYoutubeOffsets(){
+  try{ return JSON.parse(localStorage.getItem('dancePractice_youtubeOffsets') || '{}'); }
+  catch(err){ return {}; }
+}
+function saveYoutubeOffset(videoId, offset){
+  const offsets = getYoutubeOffsets();
+  offsets[videoId] = offset;
+  localStorage.setItem('dancePractice_youtubeOffsets', JSON.stringify(offsets));
+}
+
+window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, unusedSavedOffset,
     calibrateRowId, calibrateNoteId, markBtnId){
   const v = document.getElementById(videoElId);
   const calibrateRow = document.getElementById(calibrateRowId || 'reviewYoutubeCalibrateRow');
   const calibrateNote = document.getElementById(calibrateNoteId || 'reviewYoutubeCalibrateNote');
   const markBtn = document.getElementById(markBtnId || 'reviewYoutubeMarkBtn');
+  const knownOffset = getYoutubeOffsets()[videoId];
 
-  if(savedOffset != null){
+  if(knownOffset != null){
     ensureYoutubePlayerLoaded(videoId, () => {
-      if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(savedOffset, true);
+      if(ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(knownOffset, true);
       if(ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
       if(v){ v.currentTime = 0; v.play().catch(() => {}); }
     });
@@ -1145,8 +1159,7 @@ window.startYoutubeSyncPlayback = function(videoId, videoElId, sessionAt, savedO
   if(markBtn){
     markBtn.onclick = () => {
       const offset = (ytPlayer && ytPlayer.getCurrentTime) ? ytPlayer.getCurrentTime() : 0;
-      practice = practice.map(s => s.at === sessionAt ? Object.assign({}, s, { youtubeAudioOffset: offset }) : s);
-      savePractice();
+      saveYoutubeOffset(videoId, offset);
       if(calibrateRow) calibrateRow.style.display = 'none';
       if(calibrateNote) calibrateNote.style.display = 'none';
       if(v){ v.currentTime = 0; v.play().catch(() => {}); }
@@ -1889,7 +1902,7 @@ window.endPracticeSession = async function(){
     if(session.youtubeVideoId && window.startYoutubeSyncPlayback){
       syncRow.style.display = 'flex';
       document.getElementById('reviewYoutubeSyncBtn').onclick = () => {
-        window.startYoutubeSyncPlayback(session.youtubeVideoId, 'practiceReviewVideo', session.at, session.youtubeAudioOffset);
+        window.startYoutubeSyncPlayback(session.youtubeVideoId, 'practiceReviewVideo', session.at, null);
       };
     } else {
       syncRow.style.display = 'none';
