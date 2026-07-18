@@ -206,6 +206,12 @@ footer{
 .mt-actions{display:flex;gap:6px;flex-shrink:0}
 .yt-embed-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
 .yt-embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.music-tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:10px}
+.music-tile{background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:10px 8px;
+  text-align:center;cursor:pointer;font-size:.78rem;font-weight:700;word-break:break-word;line-height:1.3;
+  transition:border-color .15s ease,background .15s ease}
+.music-tile:hover{border-color:var(--purple)}
+.music-tile.selected{border-color:var(--pink);background:var(--pink-light)}
 </style>
 </head>
 <body>
@@ -233,6 +239,16 @@ footer{
         It's a technique-improving tool, not a judge — it only measures numbers (height, angle, timing), it never
         scores your artistry or technique. Height and angle are estimates from a single camera, not lab-grade motion
         capture, so use them to track your own progress over time rather than as an exact measurement.</p>
+
+      <h3 style="margin-top:14px">🎵 Choose Music (optional)</h3>
+      <div class="music-tile-grid" id="practiceMusicTiles"><p class="empty-note">No saved tracks yet — add one in the Music tab, or paste a YouTube link below.</p></div>
+      <div class="practice-controls" style="margin-top:6px">
+        <input type="text" id="practiceYoutubeUrlInput" placeholder="Or paste a YouTube link…"
+          style="flex:1;min-width:180px;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:var(--card-bg);color:var(--ink);font-family:inherit;font-size:.9rem">
+        <button class="btn secondary small" id="practiceYoutubeLoadBtn">Load</button>
+      </div>
+      <div id="practiceYoutubeError" style="display:none;color:#e05a7a;font-size:.78rem;margin-top:6px"></div>
+      <div id="practiceYoutubeStatus" style="display:none;color:var(--ink-soft);font-size:.78rem;margin-top:6px"></div>
 
       <div class="practice-stage" id="practiceStage">
         <video id="practiceVideo" autoplay playsinline muted></video>
@@ -547,6 +563,20 @@ async function deleteMusicTrack(id){
     tx.onerror = () => reject(tx.error);
   });
 }
+async function renameMusicTrack(id, newName){
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('tracks', 'readwrite');
+    const store = tx.objectStore('tracks');
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const track = req.result;
+      if(track){ track.name = newName; store.put(track); }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 async function migrateOldSingleTrack(){
   const existing = await getAllMusicTracks();
   if(existing.length) return;
@@ -678,8 +708,13 @@ function openTrackInPlayer(id, name, blob){
   document.getElementById('musicLoopLabel').textContent = 'No section set yet';
   document.getElementById('musicLoopToggleBtn').textContent = '🔁 Loop Off';
   resetMusicTaps();
-  renderMusicTrackList();
+  refreshMusicUI();
   updatePracticeMusicBar();
+}
+
+function refreshMusicUI(){
+  renderMusicTrackList();
+  renderPracticeMusicTiles();
 }
 
 function updatePracticeMusicBar(){
@@ -712,6 +747,7 @@ async function renderMusicTrackList(){
       </div>
       <div class="mt-actions">
         <button class="btn secondary small mt-play-btn" data-id="${t.id}">▶ Play</button>
+        <button class="btn ghost small mt-rename-btn" data-id="${t.id}">✏️</button>
         <button class="btn danger small mt-delete-btn" data-id="${t.id}">🗑</button>
       </div>
     </div>`).join('');
@@ -722,6 +758,38 @@ async function renderMusicTrackList(){
       const tracks2 = await getAllMusicTracks();
       const track = tracks2.find(t => t.id === id);
       if(track) openTrackInPlayer(track.id, track.name, track.blob);
+    });
+  });
+  listEl.querySelectorAll('.mt-rename-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const tracks2 = await getAllMusicTracks();
+      const track = tracks2.find(t => t.id === id);
+      if(!track) return;
+      openModal(`<h2>Rename Track</h2>
+        <input type="text" id="renameTrackInput" value="${escapeHtml(track.name)}" maxlength="120"
+          style="width:100%;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:.9rem;box-sizing:border-box">
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn small" id="renameTrackSaveBtn">Save</button>
+          <button class="btn ghost small" onclick="closeModal()">Cancel</button>
+        </div>`);
+      const input = document.getElementById('renameTrackInput');
+      input.focus();
+      input.select();
+      const doRename = async () => {
+        const newName = input.value.trim();
+        if(newName){
+          await renameMusicTrack(id, newName);
+          if(id === currentMusicTrackId){
+            document.getElementById('musicTrackName').textContent = newName;
+            updatePracticeMusicBar();
+          }
+          refreshMusicUI();
+        }
+        closeModal();
+      };
+      document.getElementById('renameTrackSaveBtn').addEventListener('click', doRename);
+      input.addEventListener('keydown', (e) => { if(e.key === 'Enter') doRename(); });
     });
   });
   listEl.querySelectorAll('.mt-delete-btn').forEach(btn => {
@@ -736,8 +804,29 @@ async function renderMusicTrackList(){
           document.getElementById('musicPlayerArea').style.display = 'none';
           updatePracticeMusicBar();
         }
-        renderMusicTrackList();
+        refreshMusicUI();
       });
+    });
+  });
+}
+
+async function renderPracticeMusicTiles(){
+  const wrap = document.getElementById('practiceMusicTiles');
+  const tracks = await getAllMusicTracks();
+  if(!tracks.length){
+    wrap.innerHTML = '<p class="empty-note">No saved tracks yet — add one in the Music tab, or paste a YouTube link below.</p>';
+    return;
+  }
+  wrap.innerHTML = tracks.map(t => `
+    <div class="music-tile${t.id===currentMusicTrackId ? ' selected' : ''}" data-id="${t.id}">
+      ${t.id===currentMusicTrackId ? '▶ ' : '🎵 '}${escapeHtml(t.name)}
+    </div>`).join('');
+  wrap.querySelectorAll('.music-tile').forEach(tile => {
+    tile.addEventListener('click', async () => {
+      const id = Number(tile.dataset.id);
+      const tracks2 = await getAllMusicTracks();
+      const track = tracks2.find(t => t.id === id);
+      if(track) openTrackInPlayer(track.id, track.name, track.blob);
     });
   });
 }
@@ -911,9 +1000,28 @@ function extractYoutubeId(input){
   return null;
 }
 
+function youtubeErrorEls(){
+  return [document.getElementById('youtubeError'), document.getElementById('practiceYoutubeError')].filter(Boolean);
+}
+function showYoutubeError(message){
+  youtubeErrorEls().forEach(el => { el.style.display = ''; el.textContent = message; });
+}
+function clearYoutubeError(){
+  youtubeErrorEls().forEach(el => { el.style.display = 'none'; });
+}
+function updateYoutubeNowPlayingStatus(){
+  if(!ytPlayer || !ytPlayer.getVideoData) return;
+  const title = ytPlayer.getVideoData().title;
+  const statusEl = document.getElementById('practiceYoutubeStatus');
+  if(statusEl && title){
+    statusEl.style.display = '';
+    statusEl.textContent = '🎵 Now streaming: ' + title;
+  }
+}
+
 function createYoutubePlayer(videoId){
   document.getElementById('youtubePlayerWrap').style.display = '';
-  document.getElementById('youtubeError').style.display = 'none';
+  clearYoutubeError();
   if(ytPlayer && ytPlayer.loadVideoById){
     ytPlayer.loadVideoById(videoId);
     return;
@@ -922,29 +1030,31 @@ function createYoutubePlayer(videoId){
     videoId,
     playerVars: { rel: 0, playsinline: 1 },
     events: {
-      onError: () => {
-        const errEl = document.getElementById('youtubeError');
-        errEl.style.display = '';
-        errEl.textContent = "Couldn't load that video — it may be private, region-locked, or the link wasn't recognised.";
-      }
+      onReady: updateYoutubeNowPlayingStatus,
+      onStateChange: updateYoutubeNowPlayingStatus,
+      onError: () => showYoutubeError("Couldn't load that video — it may be private, region-locked, or the link wasn't recognised.")
     }
   });
 }
 
-document.getElementById('youtubeLoadBtn').addEventListener('click', () => {
-  const raw = document.getElementById('youtubeUrlInput').value;
+function loadYoutubeFromInput(inputId){
+  const raw = document.getElementById(inputId).value;
   const id = extractYoutubeId(raw);
-  const errEl = document.getElementById('youtubeError');
   if(!id){
-    errEl.style.display = '';
-    errEl.textContent = "That doesn't look like a YouTube link — paste the full URL from the address bar or share button.";
+    showYoutubeError("That doesn't look like a YouTube link — paste the full URL from the address bar or share button.");
     return;
   }
-  errEl.style.display = 'none';
+  clearYoutubeError();
   localStorage.setItem('dancePractice_lastYoutubeId', id);
   ytPendingVideoId = id;
   if(ytApiReady) createYoutubePlayer(id);
   else loadYoutubeApi();
+}
+
+document.getElementById('youtubeLoadBtn').addEventListener('click', () => loadYoutubeFromInput('youtubeUrlInput'));
+document.getElementById('practiceYoutubeLoadBtn').addEventListener('click', () => {
+  document.getElementById('youtubeUrlInput').value = document.getElementById('practiceYoutubeUrlInput').value;
+  loadYoutubeFromInput('practiceYoutubeUrlInput');
 });
 
 document.getElementById('youtubeSpeedSlider').addEventListener('input', (e) => {
@@ -954,9 +1064,12 @@ document.getElementById('youtubeSpeedSlider').addEventListener('input', (e) => {
 });
 
 const lastYoutubeId = localStorage.getItem('dancePractice_lastYoutubeId');
-if(lastYoutubeId) document.getElementById('youtubeUrlInput').value = 'https://youtu.be/' + lastYoutubeId;
+if(lastYoutubeId){
+  document.getElementById('youtubeUrlInput').value = 'https://youtu.be/' + lastYoutubeId;
+  document.getElementById('practiceYoutubeUrlInput').value = 'https://youtu.be/' + lastYoutubeId;
+}
 
-migrateOldSingleTrack().then(renderMusicTrackList).catch(() => renderMusicTrackList());
+migrateOldSingleTrack().then(refreshMusicUI).catch(() => refreshMusicUI());
 
 /* ---------- init ---------- */
 renderPracticeLog();

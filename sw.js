@@ -1,4 +1,4 @@
-const CACHE_NAME = "dance-practice-companion-v1";
+const CACHE_NAME = "dance-practice-companion-v2";
 const SHELL_FILES = ["./", "./index.html", "./manifest.json",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-180.png"];
 
@@ -21,13 +21,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return; // let CDN (MediaPipe/fonts) calls go straight to network
 
+  // Network-first: always serve the latest deployed version when online, updating the cache
+  // as we go, and only fall back to whatever's cached when there's no connection. The previous
+  // cache-first approach always served last visit's version even after a new deploy landed,
+  // which made real code changes (like new features) look like they hadn't taken effect.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((res) => {
-        if (res.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, res.clone()));
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(event.request).then((res) => {
+      if (res.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, res.clone()));
+      return res;
+    }).catch(() => caches.match(event.request))
   );
 });
