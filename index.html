@@ -167,6 +167,7 @@ footer{
   overflow:hidden;background:#1a1a24;aspect-ratio:3/4;}
 .practice-stage video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
 .practice-stage canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.practice-stage.rear-camera video,.practice-stage.rear-camera canvas{transform:none}
 .practice-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:#cfc9e6;font-size:.9rem;text-align:center;padding:20px}
 .practice-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
@@ -272,6 +273,7 @@ footer{
       <div class="practice-controls">
         <button class="btn" id="practiceStartBtn" onclick="startPracticeCamera()">▶ Start Camera</button>
         <button class="btn danger" id="practiceStopBtn" onclick="confirmStopCamera()" style="display:none">■ Stop Camera</button>
+        <button class="btn ghost" id="practiceSwitchCameraBtn" onclick="switchPracticeCamera()" style="display:none">🔄 Switch Camera</button>
       </div>
 
       <div class="bpm-row" id="practiceMusicBar" style="display:none">
@@ -506,7 +508,9 @@ function renderPracticeLog(){
     ).join('')}</div>` : '';
     const watchBtn = s.hasVideo ? `<button class="btn secondary small pl-watch-btn" data-session="${s.at}" style="margin-top:8px">▶ Watch Video</button>` : '';
     return `<div class="practice-log-item"><div style="width:100%"><div class="pl-stats">${escapeHtml(parts.join(' · '))}</div>
-      <div class="pl-date">${when} · ${s.duration}s</div>${thumbs}${watchBtn}</div></div>`;
+      <div class="pl-date">${when} · ${s.duration}s</div>${thumbs}
+      <div style="margin-top:8px">${watchBtn}<button class="btn danger small pl-delete-btn" data-session="${s.at}" style="margin-left:8px">🗑 Delete</button></div>
+      </div></div>`;
   }).join('');
 
   list.querySelectorAll('.pl-thumbs img').forEach(img => {
@@ -524,6 +528,17 @@ function renderPracticeLog(){
       if(!url){ notify("Sorry, that video couldn't be found — it may have been cleared from this device."); return; }
       openModal(`<button class="close-x" onclick="closeModal()">✕</button><h2>Practice Session</h2>
         <video controls autoplay style="width:100%;border-radius:12px;background:#000" src="${url}"></video>`);
+    });
+  });
+  list.querySelectorAll('.pl-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sessionId = Number(btn.dataset.session);
+      confirmAction('Delete this practice log entry? This cannot be undone.', async () => {
+        practice = practice.filter(s => s.at !== sessionId);
+        savePractice();
+        if(window.deletePracticeVideoBlob) await window.deletePracticeVideoBlob(sessionId);
+        renderPracticeLog();
+      });
     });
   });
 }
@@ -1162,6 +1177,9 @@ showSkeletonToggle.addEventListener('change', () => {
 
 let poseLandmarker = null;
 let stream = null;
+// Rear camera is the default since dancers are often set up on a tripod, where the rear camera
+// is usually better quality anyway; front-facing gets mirrored to feel like a mirror, rear doesn't.
+let currentFacingMode = localStorage.getItem('dancePractice_facingMode') || 'environment';
 let rafId = null;
 let mode = 'free';
 let sessionStart = null;
@@ -1347,7 +1365,7 @@ document.addEventListener('visibilitychange', () => {
 
 window.startPracticeCamera = async function(){
   try{
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false });
   }catch(err){
     notify("Couldn't access your camera — check that this site has camera permission.");
     return;
@@ -1357,11 +1375,13 @@ window.startPracticeCamera = async function(){
   await new Promise(resolve => { video.onloadedmetadata = resolve; });
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
+  document.getElementById('practiceStage').classList.toggle('rear-camera', currentFacingMode === 'environment');
   placeholder.style.display = 'none';
 
   document.getElementById('practiceReviewCard').style.display = 'none';
   document.getElementById('practiceStartBtn').style.display = 'none';
   document.getElementById('practiceStopBtn').style.display = '';
+  document.getElementById('practiceSwitchCameraBtn').style.display = '';
   document.getElementById('practiceModeRow').style.display = '';
   document.getElementById('practiceLiveStats').style.display = '';
   document.getElementById('practiceEndBtn').style.display = '';
@@ -1395,6 +1415,29 @@ window.startPracticeCamera = async function(){
   placeholder.style.display = 'none';
 };
 
+window.switchPracticeCamera = async function(){
+  if(!stream) return;
+  const oldStream = stream;
+  currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  let newStream;
+  try{
+    newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false });
+  }catch(err){
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'; // revert - that camera isn't available
+    notify("Couldn't switch camera — this device may only have one, or permission was blocked.");
+    return;
+  }
+  oldStream.getTracks().forEach(t => t.stop());
+  stream = newStream;
+  video.srcObject = stream;
+  await new Promise(resolve => { video.onloadedmetadata = resolve; });
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  document.getElementById('practiceStage').classList.toggle('rear-camera', currentFacingMode === 'environment');
+  localStorage.setItem('dancePractice_facingMode', currentFacingMode);
+  sizePracticeStage();
+};
+
 window.confirmStopCamera = function(){
   openModal(`<h2>⚠️ Stop the Camera?</h2>
     <p>Have you saved your recording? If you stop now without saving, this session's video will be lost for good.</p>
@@ -1422,6 +1465,7 @@ window.stopPracticeCamera = function(){
   placeholder.style.display = '';
   document.getElementById('practiceStartBtn').style.display = '';
   document.getElementById('practiceStopBtn').style.display = 'none';
+  document.getElementById('practiceSwitchCameraBtn').style.display = 'none';
   document.getElementById('practiceModeRow').style.display = 'none';
   document.getElementById('bpmRow').style.display = 'none';
   document.getElementById('repsRow').style.display = 'none';
@@ -1644,7 +1688,8 @@ function detectLoop(){
   }
 
   if(mediaRecorder && mediaRecorder.state==='recording'){
-    recordCtx.save(); recordCtx.translate(recordCanvas.width, 0); recordCtx.scale(-1, 1);
+    recordCtx.save();
+    if(currentFacingMode === 'user'){ recordCtx.translate(recordCanvas.width, 0); recordCtx.scale(-1, 1); }
     recordCtx.drawImage(video, 0, 0, recordCanvas.width, recordCanvas.height);
     recordCtx.drawImage(canvas, 0, 0, recordCanvas.width, recordCanvas.height);
     recordCtx.restore();
