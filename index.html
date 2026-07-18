@@ -211,8 +211,10 @@ footer{
 .style-tile.selected{border-color:var(--pink);background:var(--pink-light);color:var(--pink)}
 .practice-countdown{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(20,16,30,0.55);color:#fff;text-align:center;padding:20px}
-.pc-number{font-size:5rem;font-weight:900;line-height:1;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
-.pc-label{font-size:.95rem;margin-top:10px;opacity:0.92}
+.pc-pulse{font-size:4.5rem;line-height:1;animation:pcPulse 1s ease-in-out infinite}
+@keyframes pcPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:0.6}}
+@media (prefers-reduced-motion: reduce){.pc-pulse{animation:none}}
+.pc-label{font-size:.95rem;margin-top:14px;opacity:0.92}
 .music-track-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;
   border-bottom:1px solid var(--line)}
 .music-track-item:last-child{border-bottom:none}
@@ -276,8 +278,8 @@ footer{
         <canvas id="practiceRecordCanvas" style="display:none"></canvas>
         <div class="practice-placeholder" id="practicePlaceholder">Tap "Start Camera" below to begin</div>
         <div class="practice-countdown" id="practiceCountdownOverlay" style="display:none">
-          <div class="pc-number" id="practiceCountdownNumber">10</div>
-          <div class="pc-label">Get ready — music starts soon</div>
+          <div class="pc-pulse">🔊</div>
+          <div class="pc-label">Get ready — a beep every second, music starts soon</div>
         </div>
       </div>
 
@@ -690,6 +692,7 @@ window.playMusicFromStart = function(){
   musicAudio.currentTime = 0;
   musicAudio.play().catch(() => {});
 };
+window.pauseMusic = function(){ musicAudio.pause(); };
 
 function fmtMusicTime(sec){
   if(!isFinite(sec)) return '0:00';
@@ -1209,20 +1212,18 @@ function beep(accent){
 }
 
 let countdownInterval = null;
-let countdownDisplayValue = null; // burned into the recording while the countdown runs, so it's visible on review
+let countdownActive = false; // burned into the recording while the countdown runs, so it's visible on review
 function cancelMusicCountdown(){
   if(countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
-  countdownDisplayValue = null;
+  countdownActive = false;
   document.getElementById('practiceCountdownOverlay').style.display = 'none';
 }
 function runMusicCountdown(seconds){
   return new Promise(resolve => {
     const overlay = document.getElementById('practiceCountdownOverlay');
-    const numberEl = document.getElementById('practiceCountdownNumber');
     overlay.style.display = 'flex';
     let remaining = seconds;
-    numberEl.textContent = remaining;
-    countdownDisplayValue = remaining;
+    countdownActive = true;
     beep(false);
     countdownInterval = setInterval(() => {
       remaining--;
@@ -1230,12 +1231,10 @@ function runMusicCountdown(seconds){
         clearInterval(countdownInterval);
         countdownInterval = null;
         overlay.style.display = 'none';
-        countdownDisplayValue = null;
+        countdownActive = false;
         beep(true);
         resolve();
       } else {
-        numberEl.textContent = remaining;
-        countdownDisplayValue = remaining;
         beep(false);
       }
     }, 1000);
@@ -1367,7 +1366,8 @@ window.startPracticeCamera = async function(){
 
   startRecording();
 
-  if(window.isMusicLoaded && window.isMusicLoaded() && !window.isMusicPlaying()){
+  if(window.isMusicLoaded && window.isMusicLoaded()){
+    if(window.pauseMusic) window.pauseMusic(); // always start the countdown from silence, even if it was already playing
     runMusicCountdown(10).then(() => {
       if(stream && window.playMusicFromStart) window.playMusicFromStart();
     });
@@ -1699,17 +1699,17 @@ function detectLoop(){
     recordCtx.drawImage(canvas, 0, 0, recordCanvas.width, recordCanvas.height);
     recordCtx.restore();
 
-    // Burns the get-ready countdown into the recording itself (not mirrored, so it reads correctly)
+    // Marks the get-ready countdown in the recording itself (not mirrored, so it reads correctly)
     // so reviewing the video later still shows how much run-up time was given before the music started.
-    if(countdownDisplayValue != null){
+    if(countdownActive){
       recordCtx.save();
       recordCtx.fillStyle = 'rgba(20,16,30,0.55)';
       recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
       recordCtx.fillStyle = '#fff';
       recordCtx.textAlign = 'center';
       recordCtx.textBaseline = 'middle';
-      recordCtx.font = `bold ${Math.round(recordCanvas.width * 0.28)}px sans-serif`;
-      recordCtx.fillText(String(countdownDisplayValue), recordCanvas.width / 2, recordCanvas.height / 2);
+      recordCtx.font = `${Math.round(recordCanvas.width * 0.18)}px sans-serif`;
+      recordCtx.fillText('🔊', recordCanvas.width / 2, recordCanvas.height / 2);
       recordCtx.restore();
     }
 
