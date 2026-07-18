@@ -191,8 +191,24 @@ footer{
 .practice-log-item .pl-stats{font-size:.82rem;font-weight:600}
 .pl-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .pl-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
-.practice-ref-note{background:var(--purple-light);border-radius:10px;padding:8px 12px;font-size:.76rem;
-  color:var(--ink);text-align:center;margin-bottom:12px}
+.curiosity-banner{
+  background:linear-gradient(120deg,var(--pink) 0%,var(--purple) 100%); color:#fff;
+  border-radius:14px; padding:16px 18px; margin:12px 0 14px;
+  box-shadow:0 6px 16px rgba(169,143,224,0.3);
+}
+.cb-label{font-weight:800;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.9;display:block;margin-bottom:6px}
+.curiosity-fact{font-size:1.02rem;font-weight:700;line-height:1.4;margin:0 0 10px;color:#fff;text-wrap:balance}
+.cb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cb-source{font-size:.72rem;color:#fff;opacity:.85;text-decoration:underline}
+.cb-source:empty{display:none}
+.cb-btn{background:#fff;color:var(--purple);font-size:.78rem;font-weight:800;padding:9px 14px;
+  border-radius:12px;border:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+.style-tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-bottom:14px}
+.style-tile{background:var(--bg);border:2px solid var(--line);border-radius:9px;padding:6px 4px;
+  text-align:center;cursor:pointer;font-size:.7rem;font-weight:700;line-height:1.2;
+  transition:border-color .15s ease,background .15s ease,color .15s ease}
+.style-tile:hover{border-color:var(--purple)}
+.style-tile.selected{border-color:var(--pink);background:var(--pink-light);color:var(--pink)}
 .practice-countdown{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(20,16,30,0.55);color:#fff;text-align:center;padding:20px}
 .pc-number{font-size:5rem;font-weight:900;line-height:1;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
@@ -283,6 +299,32 @@ footer{
       </div>
 
       <h3 style="margin-top:16px">⚙️ Practice Settings</h3>
+
+      <div class="curiosity-banner" id="danceCuriosityBanner">
+        <span class="cb-label">💃 Dance Curiosity Corner</span>
+        <p class="curiosity-fact" id="danceCuriosityFact">Tap for a dance fact!</p>
+        <div class="cb-row">
+          <a class="cb-source" id="danceCuriositySource" href="#" target="_blank" rel="noopener"></a>
+          <button class="cb-btn" onclick="showRandomDanceFact()">Give me a fact</button>
+        </div>
+      </div>
+
+      <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">Dance style <span style="font-weight:500;color:var(--ink-soft)">(stamped in the corner of your saved video)</span></div>
+      <div class="style-tile-grid" id="danceStyleTiles">
+        <div class="style-tile" data-style="Ballet">Ballet</div>
+        <div class="style-tile" data-style="Tap">Tap</div>
+        <div class="style-tile" data-style="Modern">Modern</div>
+        <div class="style-tile" data-style="Character">Character</div>
+        <div class="style-tile" data-style="Street">Street</div>
+        <div class="style-tile" data-style="Lyrical">Lyrical</div>
+        <div class="style-tile" data-style="Choreographic">Choreo.</div>
+        <div class="style-tile" data-style="Freestyle">Freestyle</div>
+        <div class="style-tile" data-style="Song and Dance">Song &amp; Dance</div>
+        <div class="style-tile" data-style="Duet">Duet</div>
+        <div class="style-tile" data-style="Trio">Trio</div>
+        <div class="style-tile" data-style="Group">Group</div>
+      </div>
+
       <div class="practice-mode-row" id="practiceModeRow">
         <button class="tab-btn active" data-mode="free" onclick="setPracticeMode('free')">🪞 Free Practice</button>
         <button class="tab-btn" data-mode="rhythm" onclick="setPracticeMode('rhythm')">🥁 Rhythm Practice</button>
@@ -319,7 +361,6 @@ footer{
         <div id="rhythmStatsBlock" style="display:none"><div class="stat-val" id="statOnBeat">0/0</div><div class="stat-lbl">On the Beat</div></div>
         <div id="repsStatsBlock" style="display:none"><div class="stat-val" id="statRepsProgress">0/10</div><div class="stat-lbl">Reps Done</div></div>
       </div>
-      <div class="practice-ref-note" id="practiceRefNote" style="display:none"></div>
 
       <div class="practice-controls">
         <button class="btn gold" id="practiceEndBtn" onclick="endPracticeSession()" style="display:none">🏁 End Session &amp; Save</button>
@@ -349,9 +390,11 @@ footer{
         speed it up without changing the pitch, loop any section on repeat, and tap along to set a live count overlay.
         Everything happens on this device — nothing is ever uploaded anywhere.</p>
 
-      <input type="file" id="musicFileInput" accept="audio/*,video/*" style="display:none">
+      <input type="file" id="musicFileInput" accept="audio/*" style="display:none">
+      <input type="file" id="musicVideoFileInput" accept="video/*" style="display:none">
       <div class="practice-controls">
-        <button class="btn" id="musicChooseBtn">➕ Add a Track or Video</button>
+        <button class="btn" id="musicChooseBtn">➕ Add an Audio File</button>
+        <button class="btn secondary" id="musicChooseVideoBtn">🎬 Add from Video/Photos</button>
       </div>
       <div id="musicExtractStatus" style="text-align:center;margin-top:10px;display:none;font-size:.78rem;color:var(--ink-soft)"></div>
 
@@ -508,7 +551,8 @@ function renderPracticeLog(){
         title="${j.heightCm!=null?j.heightCm.toFixed(0)+'cm · ':''}${j.splitDeg!=null?j.splitDeg.toFixed(0)+'°':''}">`
     ).join('')}</div>` : '';
     const watchBtn = s.hasVideo ? `<button class="btn secondary small pl-watch-btn" data-session="${s.at}" style="margin-top:8px">▶ Watch Video</button>` : '';
-    return `<div class="practice-log-item"><div style="width:100%"><div class="pl-stats">${escapeHtml(parts.join(' · '))}</div>
+    const styleBadge = s.danceStyle ? `<span style="background:var(--purple-light);color:var(--purple);font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px;margin-right:6px">${escapeHtml(s.danceStyle)}</span>` : '';
+    return `<div class="practice-log-item"><div style="width:100%"><div class="pl-stats">${styleBadge}${escapeHtml(parts.join(' · '))}</div>
       <div class="pl-date">${when} · ${s.duration}s</div>${thumbs}
       <div style="margin-top:8px">${watchBtn}<button class="btn danger small pl-delete-btn" data-session="${s.at}" style="margin-left:8px">🗑 Delete</button></div>
       </div></div>`;
@@ -726,6 +770,7 @@ function openTrackInPlayer(id, name, blob){
   currentMusicTrackId = id;
   musicAudio.pause();
   musicAudio.src = currentMusicObjectUrl;
+  musicAudio.play().catch(() => {}); // the button that opens a track says "Play" - it should actually play
   document.getElementById('musicTrackName').textContent = name;
   document.getElementById('musicPlayerArea').style.display = '';
   musicLoopStart = null; musicLoopEnd = null; musicLoopOn = false;
@@ -856,7 +901,11 @@ async function renderPracticeMusicTiles(){
 }
 
 document.getElementById('musicChooseBtn').addEventListener('click', () => document.getElementById('musicFileInput').click());
-document.getElementById('musicFileInput').addEventListener('change', async (e) => {
+document.getElementById('musicChooseVideoBtn').addEventListener('click', () => document.getElementById('musicVideoFileInput').click());
+document.getElementById('musicFileInput').addEventListener('change', handleMusicFileChosen);
+document.getElementById('musicVideoFileInput').addEventListener('change', handleMusicFileChosen);
+
+async function handleMusicFileChosen(e){
   const file = e.target.files[0];
   if(!file) return;
   const statusEl = document.getElementById('musicExtractStatus');
@@ -880,7 +929,7 @@ document.getElementById('musicFileInput').addEventListener('change', async (e) =
     statusEl.style.display = 'none';
   }
   e.target.value = '';
-});
+}
 
 musicAudio.addEventListener('loadedmetadata', () => {
   document.getElementById('musicSeekBar').max = musicAudio.duration;
@@ -1392,7 +1441,6 @@ window.startPracticeCamera = async function(){
   groundedWorldHipY = null; peakWorldHipY = null; peakWorld = null; jumpDetails = []; peakSnapshotDataUrl = null;
   onBeatCount = 0; totalBeatCount = 0; beatTimestamps = []; recentWristSpeeds = [];
   updateLiveStats();
-  updateRefNote();
   sizePracticeStage();
   setTimeout(() => { if(stream) sizePracticeStage(); }, 350);
 
@@ -1467,11 +1515,7 @@ window.stopPracticeCamera = function(){
   document.getElementById('practiceStartBtn').style.display = '';
   document.getElementById('practiceStopBtn').style.display = 'none';
   document.getElementById('practiceSwitchCameraBtn').style.display = 'none';
-  document.getElementById('practiceModeRow').style.display = 'none';
-  document.getElementById('bpmRow').style.display = 'none';
-  document.getElementById('repsRow').style.display = 'none';
   document.getElementById('practiceLiveStats').style.display = 'none';
-  document.getElementById('practiceRefNote').style.display = 'none';
   document.getElementById('practiceEndBtn').style.display = 'none';
 };
 
@@ -1489,7 +1533,6 @@ window.setPracticeMode = function(m){
   } else {
     document.getElementById('countDisplay').style.display = countStyle === 'none' ? 'none' : '';
   }
-  updateRefNote();
   if(stream) sizePracticeStage();
 };
 
@@ -1508,20 +1551,56 @@ window.updateRepsLabel = function(){
 // Real published reference range for jump height in trained ballet dancers performing grand jeté
 // (leap height 0.33-0.41m / 33-41cm), from: Weigand & Mokha, "Effects of Five Common Preparatory
 // Approaches on Grand Jeté Biomechanics", Journal of Dance Medicine & Science, 2024.
-const REFERENCE_JUMP_HEIGHT_CM = { low: 33, high: 41 };
-function updateRefNote(){
-  const note = document.getElementById('practiceRefNote');
-  if(mode==='free' || mode==='reps'){
-    note.style.display = '';
-    note.textContent = `📚 Published research on trained dancers' grand jeté found leap heights of ${REFERENCE_JUMP_HEIGHT_CM.low}–${REFERENCE_JUMP_HEIGHT_CM.high}cm (Weigand & Mokha, 2024) — a reference point, not a target.`;
-  } else {
-    note.style.display = 'none';
-  }
-}
-
-// Sets the correct settings visibility (bpm/reps rows, reference note) for the default mode
-// straight away, so every option is visible and choosable before the camera is even opened.
+// Sets the correct settings visibility (bpm/reps rows) for the default mode straight away, so
+// every option is visible and choosable before the camera is even opened.
 window.setPracticeMode('free');
+
+// ---------- Dance Curiosity Corner: real, sourced dance facts, checked against a named source ----------
+const DANCE_FUN_FACTS = [
+  {text:"Breaking (breakdancing) made its Olympic debut at the Paris 2024 Games — the first dancesport ever to appear at a Summer Olympics.", source:"Olympics.com", url:"https://www.olympics.com/en/sports/breaking/"},
+  {text:"Flamenco was added to UNESCO's list of Intangible Cultural Heritage of Humanity on 16 November 2010.", source:"UNESCO", url:"https://ich.unesco.org/en/decisions/5.COM/6.39"},
+  {text:"In a study of older adults, regular dancing was linked to a 76% lower risk of dementia — more than any other physical activity measured, including reading.", source:"New England Journal of Medicine (Verghese et al., 2003)", url:"https://www.nejm.org/doi/full/10.1056/NEJMoa022252"},
+  {text:"Classic pointe shoes contain no wood, plastic or steel — the stiff toe box is built from layers of paper, card and fabric held together with a flour-and-water paste, then baked to dry.", source:"Dance Retailer News", url:"https://danceretailernews.com/discover-how-a-freed-pointe-shoe-is-made-in-english-national-ballets-75th-anniversary-mini-doc/"},
+  {text:"Breaking grew out of block parties thrown by DJ Kool Herc in the Bronx, New York, in the early 1970s, as part of the birth of hip-hop culture.", source:"Smithsonian Magazine", url:"https://www.smithsonianmag.com/smithsonian-institution/how-the-block-party-became-an-urban-phenomenon-180980560/"},
+  {text:"Tchaikovsky's The Nutcracker premiered on 18 December 1892 at the Mariinsky Theatre in St Petersburg — much of the choreography was finished by Lev Ivanov after Marius Petipa fell ill.", source:"Tchaikovsky Research", url:"https://en.tchaikovsky-research.net/pages/The_Nutcracker"},
+  {text:"A study measuring trained dancers' grand jeté found leap heights of roughly 33–41cm — a useful reference point, not a target to chase.", source:"Journal of Dance Medicine & Science (Weigand & Mokha, 2024)", url:"https://pubmed.ncbi.nlm.nih.gov/38317444/"}
+];
+const _danceFactBags = {};
+function danceBagChoice(key, arr){
+  let bag = _danceFactBags[key];
+  if(!bag || bag.length === 0){
+    bag = arr.map((_, i) => i);
+    for(let i = bag.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    _danceFactBags[key] = bag;
+  }
+  return arr[bag.pop()];
+}
+window.showRandomDanceFact = function(){
+  const fact = danceBagChoice('dance-facts', DANCE_FUN_FACTS);
+  document.getElementById('danceCuriosityFact').textContent = fact.text;
+  const sourceEl = document.getElementById('danceCuriositySource');
+  sourceEl.textContent = `Source — ${fact.source}`;
+  sourceEl.href = fact.url;
+};
+showRandomDanceFact();
+setInterval(showRandomDanceFact, 25000);
+
+// ---------- Dance style tiles: purely a label, but stamped into the corner of the saved recording ----------
+let danceStyle = localStorage.getItem('dancePractice_danceStyle') || '';
+function applyDanceStyleSelection(){
+  document.querySelectorAll('.style-tile').forEach(t => t.classList.toggle('selected', t.dataset.style === danceStyle));
+}
+applyDanceStyleSelection();
+document.querySelectorAll('.style-tile').forEach(tile => {
+  tile.addEventListener('click', () => {
+    danceStyle = (danceStyle === tile.dataset.style) ? '' : tile.dataset.style;
+    localStorage.setItem('dancePractice_danceStyle', danceStyle);
+    applyDanceStyleSelection();
+  });
+});
 
 function startMetronomeInterval(){
   const intervalMs = 60000 / bpm;
@@ -1712,6 +1791,25 @@ function detectLoop(){
       recordCtx.fillText(String(countdownDisplayValue), recordCanvas.width / 2, recordCanvas.height / 2);
       recordCtx.restore();
     }
+
+    // Stamps the chosen dance style into the corner of the recording for the whole clip, so
+    // reviewing a batch of saved videos later still shows which discipline each one was.
+    if(danceStyle){
+      recordCtx.save();
+      const fontSize = Math.round(recordCanvas.width * 0.042);
+      recordCtx.font = `bold ${fontSize}px sans-serif`;
+      recordCtx.textAlign = 'left';
+      recordCtx.textBaseline = 'alphabetic';
+      const label = danceStyle.toUpperCase();
+      const padX = 10, padY = 7;
+      const textWidth = recordCtx.measureText(label).width;
+      const boxLeft = 10, boxBottom = recordCanvas.height - 10;
+      recordCtx.fillStyle = 'rgba(20,16,30,0.6)';
+      recordCtx.fillRect(boxLeft, boxBottom - fontSize - padY * 2, textWidth + padX * 2, fontSize + padY * 2);
+      recordCtx.fillStyle = '#fff';
+      recordCtx.fillText(label, boxLeft + padX, boxBottom - padY);
+      recordCtx.restore();
+    }
   }
 
   rafId = requestAnimationFrame(detectLoop);
@@ -1726,6 +1824,7 @@ window.endPracticeSession = async function(){
   const session = {
     at: sessionId,
     mode,
+    danceStyle,
     duration,
     jumps: jumpCount,
     bestJump,
